@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Radio } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Radio, Loader2 } from 'lucide-react';
+import wsManager from '../services/websocket';
 
 interface ConnectionScreenProps {
   onConnect: (id: string, count: number) => void;
@@ -8,11 +9,57 @@ interface ConnectionScreenProps {
 export default function ConnectionScreen({ onConnect }: ConnectionScreenProps) {
   const [droneId, setDroneId] = useState('');
   const [droneCount, setDroneCount] = useState(1);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [wsConnected, setWsConnected] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    wsManager.connect()
+      .then(() => {
+        setWsConnected(true);
+        setError(null);
+      })
+      .catch((err) => {
+        console.error('[ConnectionScreen] WebSocket connection failed:', err);
+        setError('Failed to connect to server');
+        setWsConnected(false);
+      });
+
+    const unsubscribe = wsManager.onMessage((message) => {
+      if (message.type === 'spawn_response') {
+        setIsConnecting(false);
+        if (message.data.success) {
+          console.log('[ConnectionScreen] Spawn successful:', message.data.message);
+          onConnect(droneId, droneCount);
+        } else {
+          setError(message.data.message || 'Spawn failed');
+        }
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [droneId, droneCount, onConnect]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (droneId.trim() && droneCount >= 1 && droneCount <= 4) {
-      onConnect(droneId.trim(), droneCount);
+    if (droneId.trim() && droneCount >= 1 && droneCount <= 4 && wsConnected) {
+      setIsConnecting(true);
+      setError(null);
+
+      const success = wsManager.send({
+        type: 'spawn_request',
+        data: {
+          drone_id: parseInt(droneId),
+          count: droneCount,
+        },
+      });
+
+      if (!success) {
+        setIsConnecting(false);
+        setError('Failed to send spawn request');
+      }
     }
   };
 
@@ -62,17 +109,34 @@ export default function ConnectionScreen({ onConnect }: ConnectionScreenProps) {
             </select>
           </div>
 
+          {error && (
+            <div className="p-3 bg-red-900/50 border border-red-700 rounded-lg text-red-200 text-sm">
+              {error}
+            </div>
+          )}
+
           <button
             type="submit"
-            disabled={!droneId.trim()}
-            className="w-full px-6 py-3 bg-sky-500 hover:bg-sky-600 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-900"
+            disabled={!droneId.trim() || !wsConnected || isConnecting}
+            className="w-full px-6 py-3 bg-sky-500 hover:bg-sky-600 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-900 flex items-center justify-center gap-2"
           >
-            Connect & Spawn
+            {isConnecting ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Spawning...
+              </>
+            ) : (
+              'Connect & Spawn'
+            )}
           </button>
         </form>
 
-        <div className="text-center text-xs text-slate-500">
-          v1.0.0
+        <div className="flex items-center justify-between text-xs">
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
+            <span className="text-slate-500">{wsConnected ? 'Server Connected' : 'Server Disconnected'}</span>
+          </div>
+          <span className="text-slate-500">v1.0.0</span>
         </div>
       </div>
     </div>
