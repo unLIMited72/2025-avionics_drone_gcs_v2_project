@@ -123,6 +123,6 @@ class WebSocketManager {
   }
 }
 
-const wsManager = new WebSocketManager('wss://riantly-accomplishable-danny.ngrok-free.dev/ws');
+const wsManager = new WebSocketManager('wss://riantly-accomplishable-danny.ngrok-free.dev/');
 
 export default wsManager;
