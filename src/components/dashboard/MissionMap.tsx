@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { MapPin } from 'lucide-react';
@@ -7,7 +7,6 @@ interface Waypoint {
   id: number;
   lat: number;
   lng: number;
-  altitude: number;
 }
 
 interface DronePosition {
@@ -107,7 +106,6 @@ export default function MissionMap({ dronePositions }: MissionMapProps) {
       id: Date.now(),
       lat,
       lng,
-      altitude: 10,
     };
 
     setWaypoints([...waypoints, newWaypoint]);
@@ -125,7 +123,15 @@ export default function MissionMap({ dronePositions }: MissionMapProps) {
     setSelectedWaypoint(null);
   };
 
-  const pathCoordinates = waypoints.map(wp => [wp.lat, wp.lng] as [number, number]);
+  const pathCoordinates = useMemo(
+    () => waypoints.map(wp => [wp.lat, wp.lng] as [number, number]),
+    [waypoints]
+  );
+
+  const selectedWaypointData = useMemo(
+    () => waypoints.find(wp => wp.id === selectedWaypoint),
+    [waypoints, selectedWaypoint]
+  );
 
   return (
     <div className="space-y-4">
@@ -201,7 +207,7 @@ export default function MissionMap({ dronePositions }: MissionMapProps) {
         )}
       </div>
 
-      {selectedWaypoint !== null && (
+      {selectedWaypoint !== null && selectedWaypointData && (
         <div className="p-3 bg-slate-900 rounded-lg border border-slate-700">
           <div className="flex items-center justify-between mb-2">
             <h5 className="text-slate-300 text-sm font-medium">
@@ -214,22 +220,20 @@ export default function MissionMap({ dronePositions }: MissionMapProps) {
               Remove
             </button>
           </div>
-          {waypoints.find(wp => wp.id === selectedWaypoint) && (
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div>
-                <span className="text-slate-500">Lat:</span>
-                <span className="text-slate-300 ml-1">
-                  {waypoints.find(wp => wp.id === selectedWaypoint)!.lat.toFixed(6)}
-                </span>
-              </div>
-              <div>
-                <span className="text-slate-500">Lng:</span>
-                <span className="text-slate-300 ml-1">
-                  {waypoints.find(wp => wp.id === selectedWaypoint)!.lng.toFixed(6)}
-                </span>
-              </div>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <span className="text-slate-500">Lat:</span>
+              <span className="text-slate-300 ml-1">
+                {selectedWaypointData.lat.toFixed(6)}
+              </span>
             </div>
-          )}
+            <div>
+              <span className="text-slate-500">Lng:</span>
+              <span className="text-slate-300 ml-1">
+                {selectedWaypointData.lng.toFixed(6)}
+              </span>
+            </div>
+          </div>
         </div>
       )}
     </div>
