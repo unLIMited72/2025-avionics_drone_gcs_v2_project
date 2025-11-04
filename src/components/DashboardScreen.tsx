@@ -22,6 +22,8 @@ export default function DashboardScreen({ droneId, droneCount, onDisconnect }: D
   const [flightMode, setFlightMode] = useState<'mission' | 'gyro' | null>(null);
   const [targetAltitude, setTargetAltitude] = useState<number>(10);
   const [targetSpeed, setTargetSpeed] = useState<number>(5);
+  const [missionActive, setMissionActive] = useState(false);
+  const [isAirborne, setIsAirborne] = useState(false);
   const [dronePositions, setDronePositions] = useState<DronePosition[]>([]);
 
   const drones = useMemo(() =>
@@ -264,6 +266,68 @@ export default function DashboardScreen({ droneId, droneCount, onDisconnect }: D
           </div>
         )}
 
+        <div className="mt-4 p-4 bg-slate-800 rounded-lg border border-slate-700">
+          <h3 className="text-white font-semibold mb-3">Flight Commands</h3>
+
+          {flightMode === 'mission' && canUseMission && (
+            <div className="flex gap-3">
+              <button
+                disabled={selectedDrones.size === 0}
+                onClick={() => setMissionActive(!missionActive)}
+                className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all transform active:scale-95 ${
+                  selectedDrones.size > 0
+                    ? missionActive
+                      ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-600/50 hover:scale-105'
+                      : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/50 hover:scale-105'
+                    : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                }`}
+              >
+                {missionActive ? 'Stop Mission' : 'Start Mission'}
+              </button>
+              <button
+                disabled={selectedDrones.size === 0}
+                onClick={() => {
+                  setMissionActive(false);
+                }}
+                className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all transform active:scale-95 ${
+                  selectedDrones.size > 0
+                    ? 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/50 hover:scale-105'
+                    : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                }`}
+              >
+                Emergency Return
+              </button>
+            </div>
+          )}
+
+          {flightMode === 'gyro' && canUseGyro && (
+            <button
+              disabled={selectedDrones.size === 0}
+              onClick={() => setIsAirborne(!isAirborne)}
+              className={`w-full px-6 py-3 rounded-lg font-semibold transition-all transform active:scale-95 ${
+                selectedDrones.size > 0
+                  ? isAirborne
+                    ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-600/50 hover:scale-105'
+                    : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/50 hover:scale-105'
+                  : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+              }`}
+            >
+              {isAirborne ? 'Land' : 'Takeoff'}
+            </button>
+          )}
+
+          {!flightMode && selectedDrones.size > 0 && (
+            <div className="text-center text-slate-400 py-3">
+              Select a flight mode to see available commands
+            </div>
+          )}
+
+          {selectedDrones.size === 0 && (
+            <div className="text-center text-slate-400 py-3">
+              Select at least one drone to enable commands
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
