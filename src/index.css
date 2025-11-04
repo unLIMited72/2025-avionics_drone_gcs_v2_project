@@ -1,0 +1,32 @@
+@import 'leaflet/dist/leaflet.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+input[type="range"].slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #0ea5e9;
+  cursor: pointer;
+  border: 2px solid #0c4a6e;
+}
+
+input[type="range"].slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #0ea5e9;
+  cursor: pointer;
+  border: 2px solid #0c4a6e;
+}
+
+input[type="range"].slider::-webkit-slider-thumb:hover {
+  background: #38bdf8;
+}
+
+input[type="range"].slider::-moz-range-thumb:hover {
+  background: #38bdf8;
+}
