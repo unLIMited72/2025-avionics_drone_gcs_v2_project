@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Radio, Wifi, WifiOff, User, Shield } from 'lucide-react';
+import { Radio, Wifi, WifiOff } from 'lucide-react';
 
 interface ConnectionScreenProps {
-  onConnect: (userRole: 'user' | 'admin', availableDrones: number) => void;
+  onConnect: (password: string, availableDrones: number) => void;
 }
 
 export default function ConnectionScreen({ onConnect }: ConnectionScreenProps) {
   const [password, setPassword] = useState('');
-  const [userRole, setUserRole] = useState<'user' | 'admin'>('user');
   const [serverConnected, setServerConnected] = useState(false);
   const [availableDrones, setAvailableDrones] = useState(4);
   const [isConnecting, setIsConnecting] = useState(true);
@@ -27,7 +26,7 @@ export default function ConnectionScreen({ onConnect }: ConnectionScreenProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (password.trim() && serverConnected) {
-      onConnect(userRole, availableDrones);
+      onConnect(password, availableDrones);
     }
   };
 
@@ -75,38 +74,6 @@ export default function ConnectionScreen({ onConnect }: ConnectionScreenProps) {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <label htmlFor="userRole" className="block text-sm font-medium text-slate-300">
-              User Role
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setUserRole('user')}
-                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${
-                  userRole === 'user'
-                    ? 'bg-sky-500/20 border-sky-500 text-sky-400'
-                    : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600'
-                }`}
-              >
-                <User className="w-5 h-5" />
-                <span className="font-medium">User</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setUserRole('admin')}
-                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${
-                  userRole === 'admin'
-                    ? 'bg-sky-500/20 border-sky-500 text-sky-400'
-                    : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600'
-                }`}
-              >
-                <Shield className="w-5 h-5" />
-                <span className="font-medium">Admin</span>
-              </button>
-            </div>
-          </div>
-
           <div className="space-y-2">
             <label htmlFor="password" className="block text-sm font-medium text-slate-300">
               Password
