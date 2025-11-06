@@ -5,7 +5,6 @@ import MissionMap from './dashboard/MissionMap';
 import GyroControl from './dashboard/GyroControl';
 
 interface DashboardScreenProps {
-  droneId: string;
   droneCount: number;
   onDisconnect: () => void;
 }
@@ -17,7 +16,7 @@ interface DronePosition {
   heading: number;
 }
 
-export default function DashboardScreen({ droneId, droneCount, onDisconnect }: DashboardScreenProps) {
+export default function DashboardScreen({ droneCount, onDisconnect }: DashboardScreenProps) {
   const [selectedDrones, setSelectedDrones] = useState<Set<number>>(new Set());
   const [flightMode, setFlightMode] = useState<'mission' | 'gyro' | null>(null);
   const [targetAltitude, setTargetAltitude] = useState<number>(10);
@@ -94,9 +93,7 @@ export default function DashboardScreen({ droneId, droneCount, onDisconnect }: D
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-xl font-bold text-white">Drone GCS</h1>
-            <p className="text-sm text-slate-400">
-              ID: <span className="text-white font-medium">{droneId}</span>
-            </p>
+            <p className="text-sm text-slate-400">Ground Control Station</p>
           </div>
 
           <div className="flex items-center gap-3">

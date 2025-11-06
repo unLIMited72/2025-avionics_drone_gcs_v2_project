@@ -25,7 +25,6 @@ function App() {
         <ConnectionScreen onConnect={handleConnect} />
       ) : (
         <DashboardScreen
-          droneId="GCS"
           droneCount={droneCount}
           onDisconnect={handleDisconnect}
         />
