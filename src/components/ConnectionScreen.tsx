@@ -2,11 +2,10 @@ import { useState, useEffect } from 'react';
 import { Radio, Wifi, WifiOff, User, Shield } from 'lucide-react';
 
 interface ConnectionScreenProps {
-  onConnect: (userId: string, userRole: 'user' | 'admin', availableDrones: number) => void;
+  onConnect: (userRole: 'user' | 'admin', availableDrones: number) => void;
 }
 
 export default function ConnectionScreen({ onConnect }: ConnectionScreenProps) {
-  const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [userRole, setUserRole] = useState<'user' | 'admin'>('user');
   const [serverConnected, setServerConnected] = useState(false);
@@ -27,8 +26,8 @@ export default function ConnectionScreen({ onConnect }: ConnectionScreenProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (userId.trim() && password.trim() && serverConnected) {
-      onConnect(userId.trim(), userRole, availableDrones);
+    if (password.trim() && serverConnected) {
+      onConnect(userRole, availableDrones);
     }
   };
 
@@ -109,22 +108,6 @@ export default function ConnectionScreen({ onConnect }: ConnectionScreenProps) {
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="userId" className="block text-sm font-medium text-slate-300">
-              User ID
-            </label>
-            <input
-              id="userId"
-              type="text"
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-              placeholder="Enter your user ID"
-              className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-              disabled={!serverConnected}
-              autoFocus={serverConnected}
-            />
-          </div>
-
-          <div className="space-y-2">
             <label htmlFor="password" className="block text-sm font-medium text-slate-300">
               Password
             </label>
@@ -141,7 +124,7 @@ export default function ConnectionScreen({ onConnect }: ConnectionScreenProps) {
 
           <button
             type="submit"
-            disabled={!userId.trim() || !password.trim() || !serverConnected}
+            disabled={!password.trim() || !serverConnected}
             className="w-full px-6 py-3 bg-sky-500 hover:bg-sky-600 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-900"
           >
             Connect
