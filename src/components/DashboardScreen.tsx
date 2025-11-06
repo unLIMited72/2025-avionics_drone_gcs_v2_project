@@ -1,13 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
-import { X, Eye, Shield } from 'lucide-react';
+import { X } from 'lucide-react';
 import DroneStatusBar from './dashboard/DroneStatusBar';
 import MissionMap from './dashboard/MissionMap';
 import GyroControl from './dashboard/GyroControl';
-import { getGCSState, updateGCSState, subscribeToGCSState, type GCSState } from '../lib/supabase';
 
 interface DashboardScreenProps {
   droneCount: number;
-  isAdmin: boolean;
   onDisconnect: () => void;
 }
 
@@ -18,7 +16,7 @@ interface DronePosition {
   heading: number;
 }
 
-export default function DashboardScreen({ droneCount, isAdmin, onDisconnect }: DashboardScreenProps) {
+export default function DashboardScreen({ droneCount, onDisconnect }: DashboardScreenProps) {
   const [selectedDrones, setSelectedDrones] = useState<Set<number>>(new Set());
   const [flightMode, setFlightMode] = useState<'mission' | 'gyro' | null>(null);
   const [targetAltitude, setTargetAltitude] = useState<number>(10);
@@ -45,53 +43,13 @@ export default function DashboardScreen({ droneCount, isAdmin, onDisconnect }: D
   );
 
   useEffect(() => {
-    const loadInitialState = async () => {
-      const state = await getGCSState();
-      if (state) {
-        setSelectedDrones(new Set(state.selected_drones));
-        setFlightMode(state.flight_mode);
-        setTargetAltitude(state.target_altitude);
-        setTargetSpeed(state.target_speed);
-        setMissionActive(state.mission_active);
-        setIsAirborne(state.is_airborne);
-        if (state.drone_positions.length > 0) {
-          setDronePositions(state.drone_positions);
-        }
-      }
-    };
-
-    loadInitialState();
-
-    if (!isAdmin) {
-      const unsubscribe = subscribeToGCSState((state) => {
-        setSelectedDrones(new Set(state.selected_drones));
-        setFlightMode(state.flight_mode);
-        setTargetAltitude(state.target_altitude);
-        setTargetSpeed(state.target_speed);
-        setMissionActive(state.mission_active);
-        setIsAirborne(state.is_airborne);
-        if (state.drone_positions.length > 0) {
-          setDronePositions(state.drone_positions);
-        }
-      });
-
-      return unsubscribe;
-    }
-  }, [isAdmin]);
-
-  useEffect(() => {
     const initialPositions: DronePosition[] = Array.from({ length: droneCount }, (_, index) => ({
       droneNumber: index + 1,
       lat: 37.5665 + (Math.random() - 0.5) * 0.01,
       lng: 126.9780 + (Math.random() - 0.5) * 0.01,
       heading: Math.random() * 360,
     }));
-
-    if (dronePositions.length === 0) {
-      setDronePositions(initialPositions);
-    }
-
-    if (!isAdmin) return;
+    setDronePositions(initialPositions);
 
     const interval = setInterval(() => {
       setDronePositions(prev =>
@@ -105,24 +63,9 @@ export default function DashboardScreen({ droneCount, isAdmin, onDisconnect }: D
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [droneCount, isAdmin, dronePositions.length]);
-
-  useEffect(() => {
-    if (isAdmin) {
-      updateGCSState({
-        selected_drones: Array.from(selectedDrones),
-        flight_mode: flightMode,
-        target_altitude: targetAltitude,
-        target_speed: targetSpeed,
-        mission_active: missionActive,
-        is_airborne: isAirborne,
-        drone_positions: dronePositions
-      }, 'admin');
-    }
-  }, [isAdmin, selectedDrones, flightMode, targetAltitude, targetSpeed, missionActive, isAirborne, dronePositions]);
+  }, [droneCount]);
 
   const handleSelectDrone = (droneNumber: number) => {
-    if (!isAdmin) return;
     setSelectedDrones(prev => {
       const newSet = new Set(prev);
       if (newSet.has(droneNumber)) {
@@ -154,20 +97,6 @@ export default function DashboardScreen({ droneCount, isAdmin, onDisconnect }: D
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 rounded-lg">
-              {isAdmin ? (
-                <>
-                  <Shield className="w-4 h-4 text-emerald-400" />
-                  <span className="text-xs font-semibold text-emerald-400">ADMIN</span>
-                </>
-              ) : (
-                <>
-                  <Eye className="w-4 h-4 text-sky-400" />
-                  <span className="text-xs font-semibold text-sky-400">OBSERVER</span>
-                </>
-              )}
-            </div>
-
             <div className="flex items-center gap-2">
               <span className="text-xs text-slate-400">Server</span>
               <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
@@ -183,14 +112,6 @@ export default function DashboardScreen({ droneCount, isAdmin, onDisconnect }: D
           </div>
         </div>
       </div>
-
-      {!isAdmin && (
-        <div className="bg-sky-500/10 border-b border-sky-500/30 px-4 py-2">
-          <p className="text-sky-400 text-sm text-center">
-            You are in observer mode. All controls are disabled. You can view the admin's actions in real-time.
-          </p>
-        </div>
-      )}
 
       <div className="flex-1 overflow-y-auto p-4">
         <div className="space-y-3">
@@ -217,37 +138,37 @@ export default function DashboardScreen({ droneCount, isAdmin, onDisconnect }: D
           <div className="flex gap-3">
             <button
               onClick={() => {
-                if (canUseMission && isAdmin) {
+                if (canUseMission) {
                   setFlightMode(flightMode === 'mission' ? null : 'mission');
                 }
               }}
-              disabled={!canUseMission || !isAdmin}
+              disabled={!canUseMission}
               className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all ${
                 flightMode === 'mission'
                   ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/50'
-                  : canUseMission && isAdmin
+                  : canUseMission
                   ? 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                   : 'bg-slate-800 text-slate-600 cursor-not-allowed'
               }`}
-              title={!isAdmin ? 'Admin only' : !canUseMission ? 'Select at least 1 drone to use Mission Flight' : ''}
+              title={!canUseMission ? 'Select at least 1 drone to use Mission Flight' : ''}
             >
               Mission Flight
             </button>
             <button
               onClick={() => {
-                if (canUseGyro && isAdmin) {
+                if (canUseGyro) {
                   setFlightMode(flightMode === 'gyro' ? null : 'gyro');
                 }
               }}
-              disabled={!canUseGyro || !isAdmin}
+              disabled={!canUseGyro}
               className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all ${
                 flightMode === 'gyro'
                   ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/50'
-                  : canUseGyro && isAdmin
+                  : canUseGyro
                   ? 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                   : 'bg-slate-800 text-slate-600 cursor-not-allowed'
               }`}
-              title={!isAdmin ? 'Admin only' : !canUseGyro ? 'Select exactly 1 drone to use Gyro Flight' : ''}
+              title={!canUseGyro ? 'Select exactly 1 drone to use Gyro Flight' : ''}
             >
               Gyro Flight
             </button>
@@ -281,9 +202,8 @@ export default function DashboardScreen({ droneCount, isAdmin, onDisconnect }: D
                       setTargetAltitude(val === '' ? 0 : Number(val));
                     }
                   }}
-                  disabled={!isAdmin}
                   placeholder="0"
-                  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-sky-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-sky-500 transition-colors"
                 />
               </div>
               <div>
@@ -297,9 +217,8 @@ export default function DashboardScreen({ droneCount, isAdmin, onDisconnect }: D
                       setTargetSpeed(val === '' ? 0 : Number(val));
                     }
                   }}
-                  disabled={!isAdmin}
                   placeholder="0"
-                  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-sky-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-sky-500 transition-colors"
                 />
               </div>
             </div>
@@ -321,9 +240,8 @@ export default function DashboardScreen({ droneCount, isAdmin, onDisconnect }: D
                       setTargetAltitude(val === '' ? 0 : Number(val));
                     }
                   }}
-                  disabled={!isAdmin}
                   placeholder="0"
-                  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-sky-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-sky-500 transition-colors"
                 />
               </div>
               <div>
@@ -337,9 +255,8 @@ export default function DashboardScreen({ droneCount, isAdmin, onDisconnect }: D
                       setTargetSpeed(val === '' ? 0 : Number(val));
                     }
                   }}
-                  disabled={!isAdmin}
                   placeholder="0"
-                  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-sky-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-sky-500 transition-colors"
                 />
               </div>
             </div>
@@ -352,10 +269,10 @@ export default function DashboardScreen({ droneCount, isAdmin, onDisconnect }: D
           {flightMode === 'mission' && canUseMission && (
             <div className="flex gap-3">
               <button
-                disabled={selectedDrones.size === 0 || !isAdmin}
+                disabled={selectedDrones.size === 0}
                 onClick={() => setMissionActive(!missionActive)}
                 className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all transform active:scale-95 ${
-                  selectedDrones.size > 0 && isAdmin
+                  selectedDrones.size > 0
                     ? missionActive
                       ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-600/50 hover:scale-105'
                       : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/50 hover:scale-105'
@@ -365,12 +282,12 @@ export default function DashboardScreen({ droneCount, isAdmin, onDisconnect }: D
                 {missionActive ? 'Stop Mission' : 'Start Mission'}
               </button>
               <button
-                disabled={selectedDrones.size === 0 || !isAdmin}
+                disabled={selectedDrones.size === 0}
                 onClick={() => {
                   setMissionActive(false);
                 }}
                 className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all transform active:scale-95 ${
-                  selectedDrones.size > 0 && isAdmin
+                  selectedDrones.size > 0
                     ? 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/50 hover:scale-105'
                     : 'bg-slate-700 text-slate-500 cursor-not-allowed'
                 }`}
@@ -382,10 +299,10 @@ export default function DashboardScreen({ droneCount, isAdmin, onDisconnect }: D
 
           {flightMode === 'gyro' && canUseGyro && (
             <button
-              disabled={selectedDrones.size === 0 || !isAdmin}
+              disabled={selectedDrones.size === 0}
               onClick={() => setIsAirborne(!isAirborne)}
               className={`w-full px-6 py-3 rounded-lg font-semibold transition-all transform active:scale-95 ${
-                selectedDrones.size > 0 && isAdmin
+                selectedDrones.size > 0
                   ? isAirborne
                     ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-600/50 hover:scale-105'
                     : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/50 hover:scale-105'

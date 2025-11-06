@@ -13,8 +13,6 @@ function App() {
     setIsConnected(true);
   };
 
-  const isAdmin = userPassword === 'admin';
-
   const handleDisconnect = () => {
     setIsConnected(false);
     setUserPassword('');
@@ -28,7 +26,6 @@ function App() {
       ) : (
         <DashboardScreen
           droneCount={droneCount}
-          isAdmin={isAdmin}
           onDisconnect={handleDisconnect}
         />
       )}
