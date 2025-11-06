@@ -1,18 +1,34 @@
-import { useState } from 'react';
-import { Radio } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Radio, Wifi, WifiOff, User, Shield } from 'lucide-react';
 
 interface ConnectionScreenProps {
-  onConnect: (id: string, count: number) => void;
+  onConnect: (userId: string, userRole: 'user' | 'admin', availableDrones: number) => void;
 }
 
 export default function ConnectionScreen({ onConnect }: ConnectionScreenProps) {
-  const [droneId, setDroneId] = useState('');
-  const [droneCount, setDroneCount] = useState(1);
+  const [userId, setUserId] = useState('');
+  const [password, setPassword] = useState('');
+  const [userRole, setUserRole] = useState<'user' | 'admin'>('user');
+  const [serverConnected, setServerConnected] = useState(false);
+  const [availableDrones, setAvailableDrones] = useState(4);
+  const [isConnecting, setIsConnecting] = useState(true);
+
+  useEffect(() => {
+    const checkServerConnection = async () => {
+      setIsConnecting(true);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setServerConnected(true);
+      setAvailableDrones(4);
+      setIsConnecting(false);
+    };
+
+    checkServerConnection();
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (droneId.trim() && droneCount >= 1 && droneCount <= 4) {
-      onConnect(droneId.trim(), droneCount);
+    if (userId.trim() && password.trim() && serverConnected) {
+      onConnect(userId.trim(), userRole, availableDrones);
     }
   };
 
@@ -29,45 +45,106 @@ export default function ConnectionScreen({ onConnect }: ConnectionScreenProps) {
           </div>
         </div>
 
+        <div className="space-y-3">
+          <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+            <div className="flex items-center gap-3">
+              {isConnecting ? (
+                <div className="w-5 h-5 border-2 border-slate-400 border-t-sky-500 rounded-full animate-spin" />
+              ) : serverConnected ? (
+                <Wifi className="w-5 h-5 text-green-400" />
+              ) : (
+                <WifiOff className="w-5 h-5 text-red-400" />
+              )}
+              <span className="text-sm font-medium text-slate-300">Server Status</span>
+            </div>
+            <span className={`text-sm font-semibold ${
+              isConnecting ? 'text-slate-400' : serverConnected ? 'text-green-400' : 'text-red-400'
+            }`}>
+              {isConnecting ? 'Connecting...' : serverConnected ? 'Connected' : 'Disconnected'}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+            <div className="flex items-center gap-3">
+              <Radio className="w-5 h-5 text-sky-400" />
+              <span className="text-sm font-medium text-slate-300">Available Drones</span>
+            </div>
+            <span className="text-sm font-semibold text-sky-400">
+              {isConnecting ? '-' : `${availableDrones} Units`}
+            </span>
+          </div>
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <label htmlFor="droneId" className="block text-sm font-medium text-slate-300">
-              Drone ID
+            <label htmlFor="userRole" className="block text-sm font-medium text-slate-300">
+              User Role
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setUserRole('user')}
+                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${
+                  userRole === 'user'
+                    ? 'bg-sky-500/20 border-sky-500 text-sky-400'
+                    : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600'
+                }`}
+              >
+                <User className="w-5 h-5" />
+                <span className="font-medium">User</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setUserRole('admin')}
+                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${
+                  userRole === 'admin'
+                    ? 'bg-sky-500/20 border-sky-500 text-sky-400'
+                    : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600'
+                }`}
+              >
+                <Shield className="w-5 h-5" />
+                <span className="font-medium">Admin</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="userId" className="block text-sm font-medium text-slate-300">
+              User ID
             </label>
             <input
-              id="droneId"
+              id="userId"
               type="text"
-              value={droneId}
-              onChange={(e) => setDroneId(e.target.value)}
-              placeholder="Enter drone identifier"
+              value={userId}
+              onChange={(e) => setUserId(e.target.value)}
+              placeholder="Enter your user ID"
               className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-              autoFocus
+              disabled={!serverConnected}
+              autoFocus={serverConnected}
             />
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="droneCount" className="block text-sm font-medium text-slate-300">
-              Number of Drones
+            <label htmlFor="password" className="block text-sm font-medium text-slate-300">
+              Password
             </label>
-            <select
-              id="droneCount"
-              value={droneCount}
-              onChange={(e) => setDroneCount(parseInt(e.target.value))}
-              className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-            >
-              <option value="1">1 Drone</option>
-              <option value="2">2 Drones</option>
-              <option value="3">3 Drones</option>
-              <option value="4">4 Drones</option>
-            </select>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password"
+              className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              disabled={!serverConnected}
+            />
           </div>
 
           <button
             type="submit"
-            disabled={!droneId.trim()}
+            disabled={!userId.trim() || !password.trim() || !serverConnected}
             className="w-full px-6 py-3 bg-sky-500 hover:bg-sky-600 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-900"
           >
-            Connect & Spawn
+            Connect
           </button>
         </form>
 
