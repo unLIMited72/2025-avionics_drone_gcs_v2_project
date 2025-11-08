@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { MapPin } from 'lucide-react';
@@ -57,17 +57,22 @@ export default function MissionMap({ drones = [] }: MissionMapProps) {
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
   const [selectedWaypoint, setSelectedWaypoint] = useState<number | null>(null);
   const mapRef = useRef<L.Map>(null);
+  const [initialCenter] = useState<[number, number]>([37.5665, 126.9780]);
+  const hasSetCenter = useRef(false);
 
   const dronesWithPosition = useMemo(
     () => drones.filter(d => d.latitude !== undefined && d.longitude !== undefined),
     [drones]
   );
 
-  const mapCenter = useMemo(() => {
-    if (dronesWithPosition.length > 0 && dronesWithPosition[0].latitude && dronesWithPosition[0].longitude) {
-      return [dronesWithPosition[0].latitude, dronesWithPosition[0].longitude] as [number, number];
+  useEffect(() => {
+    if (!hasSetCenter.current && dronesWithPosition.length > 0 && mapRef.current) {
+      const firstDrone = dronesWithPosition[0];
+      if (firstDrone.latitude && firstDrone.longitude) {
+        mapRef.current.setView([firstDrone.latitude, firstDrone.longitude], 17);
+        hasSetCenter.current = true;
+      }
     }
-    return [37.5665, 126.9780] as [number, number];
   }, [dronesWithPosition]);
 
   const handleMapClick = (lat: number, lng: number) => {
@@ -126,11 +131,10 @@ export default function MissionMap({ drones = [] }: MissionMapProps) {
 
       <div className="relative w-full h-96 rounded-lg border-2 border-slate-700 overflow-hidden">
         <MapContainer
-          center={mapCenter}
+          center={initialCenter}
           zoom={17}
           style={{ height: '100%', width: '100%' }}
           ref={mapRef}
-          key={`${mapCenter[0]}-${mapCenter[1]}`}
         >
           <TileLayer
             url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
