@@ -6,11 +6,7 @@ interface ConnectionScreenProps {
   onConnect: () => void;
 }
 
-const BASE_URL = 'px4gcsserver.ngrok.app';
-const ROS_BRIDGE_URL =
-  typeof window !== 'undefined' && window.location.protocol === 'https:'
-    ? `wss://${BASE_URL}`
-    : `ws://${BASE_URL}`;
+const ROS_BRIDGE_URL = 'wss://px4gcsserver.ngrok.app';
 
 export default function ConnectionScreen({ onConnect }: ConnectionScreenProps) {
   const [password, setPassword] = useState('');
@@ -19,12 +15,6 @@ export default function ConnectionScreen({ onConnect }: ConnectionScreenProps) {
   const [isConnecting, setIsConnecting] = useState(true);
 
   useEffect(() => {
-    if (rosConnection.isConnected()) {
-      setIsConnecting(false);
-      setServerConnected(true);
-      return;
-    }
-
     setIsConnecting(true);
 
     const unsubscribeConnection = rosConnection.onConnectionChange((connected) => {
@@ -44,7 +34,6 @@ export default function ConnectionScreen({ onConnect }: ConnectionScreenProps) {
     return () => {
       unsubscribeConnection();
       unsubscribeStatus();
-      rosConnection.disconnect();
     };
   }, []);
 
