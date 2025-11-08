@@ -1,18 +1,45 @@
 declare module 'roslib' {
-  export = ROSLIB;
+  export default ROSLIB;
 
   namespace ROSLIB {
+    interface RosOptions {
+      url: string;
+    }
+
     class Ros {
-      constructor(options: { url: string });
-      on(event: string, callback: (error?: Error) => void): void;
+      constructor(options: RosOptions);
+      on(event: 'connection', callback: () => void): void;
+      on(event: 'close', callback: () => void): void;
+      on(event: 'error', callback: (error: Error) => void): void;
       close(): void;
-      isConnected: boolean;
+      connected: boolean;
+    }
+
+    interface TopicOptions {
+      ros: Ros;
+      name: string;
+      messageType: string;
+      queue_length?: number;
     }
 
     class Topic {
-      constructor(options: { ros: Ros; name: string; messageType: string });
+      constructor(options: TopicOptions);
       subscribe(callback: (message: any) => void): void;
       unsubscribe(): void;
+      publish(message: any): void;
+      advertise(): void;
+      unadvertise(): void;
+    }
+
+    interface ServiceOptions {
+      ros: Ros;
+      name: string;
+      serviceType: string;
+    }
+
+    class Service {
+      constructor(options: ServiceOptions);
+      callService(request: any, callback: (response: any) => void): void;
     }
   }
 }
