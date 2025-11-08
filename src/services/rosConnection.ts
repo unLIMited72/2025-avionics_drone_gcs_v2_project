@@ -68,14 +68,19 @@ class ROSConnection {
       this.lastMessageTime = Date.now();
       const msg = message as UIStatusMessage;
 
+      console.log('Raw ROS message:', JSON.stringify(msg, null, 2));
+      console.log('status_in_flights array:', msg.status_in_flights);
+
       const drones: DroneStatus[] = msg.drone_ids.map((id, i) => {
         const statusValue = msg.status_in_flights[i];
+        console.log(`Drone ${id}: Raw status value = ${statusValue}, type = ${typeof statusValue}`);
+
         const statusMap: { [key: number]: 'Normal' | 'Warning' | 'Danger' } = {
           0: 'Normal',
           1: 'Warning',
           2: 'Danger'
         };
-        const status = statusMap[statusValue] || 'Normal';
+        const status = statusMap[statusValue] !== undefined ? statusMap[statusValue] : 'Normal';
 
         console.log(`Drone ${id}: status_in_flight=${statusValue}, mapped status=${status}`);
 
@@ -89,6 +94,7 @@ class ROSConnection {
         };
       });
 
+      console.log('Final drones array:', drones);
       this.notifyStatusUpdate(drones);
     });
   }
