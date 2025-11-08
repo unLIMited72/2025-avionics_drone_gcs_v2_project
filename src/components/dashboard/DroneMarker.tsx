@@ -96,7 +96,7 @@ export default function DroneMarker({ drone }: DroneMarkerProps) {
       <Tooltip direction="top" offset={[0, -20]} opacity={0.9}>
         <div style={{ fontSize: '12px' }}>
           <div><strong>Drone {drone.id}</strong></div>
-          <div>Battery: {drone.battery}%</div>
+          <div>Battery: {drone.battery.toFixed(1)}%</div>
           <div>Heading: {heading.toFixed(1)}°</div>
           <div>Status: {drone.status}</div>
         </div>
