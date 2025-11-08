@@ -19,36 +19,36 @@ const createDroneIcon = (id: string, headingDeg: number) => {
     html: `
       <div style="
         position: relative;
-        width: 120px;
-        height: 120px;
+        width: 90px;
+        height: 90px;
         display: flex;
         align-items: center;
         justify-content: center;
       ">
         <svg
-          width="120"
-          height="120"
-          viewBox="0 0 120 120"
+          width="90"
+          height="90"
+          viewBox="0 0 90 90"
           style="
             position: absolute;
             top: 0;
             left: 0;
             transform: rotate(${headingDeg}deg);
-            filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.6));
+            filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.5));
             transition: transform 0.3s ease;
             z-index: 1;
           "
         >
           <path
-            d="M60 10 L85 95 L60 85 L35 95 Z"
+            d="M45 8 L55 72 L45 66 L35 72 Z"
             fill="#ef4444"
             stroke="#7f1d1d"
-            stroke-width="4"
+            stroke-width="3"
           />
           <circle
-            cx="60"
-            cy="60"
-            r="8"
+            cx="45"
+            cy="45"
+            r="6"
             fill="#7f1d1d"
           />
         </svg>
@@ -58,14 +58,9 @@ const createDroneIcon = (id: string, headingDeg: number) => {
           left: 50%;
           transform: translate(-50%, -50%);
           color: white;
-          font-weight: 900;
-          font-size: 24px;
-          text-shadow:
-            -2px -2px 0 #000,
-            2px -2px 0 #000,
-            -2px 2px 0 #000,
-            2px 2px 0 #000,
-            0 0 8px rgba(0, 0, 0, 0.8);
+          font-weight: 300;
+          font-size: 15px;
+          text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
           white-space: nowrap;
           pointer-events: none;
           z-index: 2;
@@ -74,8 +69,8 @@ const createDroneIcon = (id: string, headingDeg: number) => {
         </div>
       </div>
     `,
-    iconSize: [120, 120],
-    iconAnchor: [60, 60],
+    iconSize: [90, 90],
+    iconAnchor: [45, 45],
   });
 };
 
