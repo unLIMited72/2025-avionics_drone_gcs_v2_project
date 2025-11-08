@@ -9,8 +9,8 @@ interface ConnectionScreenProps {
 const BASE_URL = 'px4gcsserver.ngrok.app';
 const ROS_BRIDGE_URL =
   typeof window !== 'undefined' && window.location.protocol === 'https:'
-    ? `wss://${BASE_URL}:9090`
-    : `ws://${BASE_URL}:9090`;
+    ? `wss://${BASE_URL}`
+    : `ws://${BASE_URL}`;
 
 export default function ConnectionScreen({ onConnect }: ConnectionScreenProps) {
   const [password, setPassword] = useState('');
