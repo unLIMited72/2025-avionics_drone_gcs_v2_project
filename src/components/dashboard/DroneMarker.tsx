@@ -19,58 +19,58 @@ const createDroneIcon = (id: string, headingDeg: number) => {
     html: `
       <div style="
         position: relative;
-        width: 80px;
-        height: 80px;
+        width: 120px;
+        height: 120px;
         display: flex;
         align-items: center;
         justify-content: center;
       ">
         <svg
-          width="80"
-          height="80"
-          viewBox="0 0 80 80"
+          width="120"
+          height="120"
+          viewBox="0 0 120 120"
           style="
             transform: rotate(${headingDeg}deg);
-            filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.5));
+            filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.6));
             transition: transform 0.3s ease;
           "
         >
           <path
-            d="M40 8 L52 60 L40 54 L28 60 Z"
+            d="M60 10 L85 95 L60 85 L35 95 Z"
             fill="#ef4444"
             stroke="#7f1d1d"
-            stroke-width="3"
+            stroke-width="4"
           />
           <circle
-            cx="40"
-            cy="40"
-            r="6"
+            cx="60"
+            cy="60"
+            r="8"
             fill="#7f1d1d"
           />
         </svg>
         <div style="
           position: absolute;
-          top: 50%;
+          top: 8px;
           left: 50%;
-          transform: translate(-50%, -50%);
-          background-color: rgba(127, 29, 29, 0.95);
+          transform: translateX(-50%);
           color: white;
-          font-weight: bold;
-          font-size: 16px;
-          padding: 4px 10px;
-          border-radius: 6px;
-          border: 2px solid #ef4444;
+          font-weight: 900;
+          font-size: 24px;
+          text-shadow:
+            -2px -2px 0 #000,
+            2px -2px 0 #000,
+            -2px 2px 0 #000,
+            2px 2px 0 #000,
+            0 0 8px rgba(0, 0, 0, 0.8);
           white-space: nowrap;
           pointer-events: none;
-          min-width: 30px;
-          text-align: center;
         ">
           ${displayId}
         </div>
       </div>
     `,
-    iconSize: [80, 80],
-    iconAnchor: [40, 40],
+    iconSize: [120, 120],
+    iconAnchor: [60, 60],
   });
 };
 
