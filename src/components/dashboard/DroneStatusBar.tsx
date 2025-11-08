@@ -50,7 +50,7 @@ export default function DroneStatusBar({
             <div className="flex items-center gap-1.5">
               <Battery className={`w-3 h-3 ${getBatteryColor(battery)}`} />
               <span className="text-xs text-slate-300">
-                <span className={getBatteryColor(battery)}>{battery}%</span>
+                <span className={getBatteryColor(battery)}>{battery.toFixed(1)}%</span>
               </span>
             </div>
           </div>
