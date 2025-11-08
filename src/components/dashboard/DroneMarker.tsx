@@ -30,9 +30,13 @@ const createDroneIcon = (id: string, headingDeg: number) => {
           height="120"
           viewBox="0 0 120 120"
           style="
+            position: absolute;
+            top: 0;
+            left: 0;
             transform: rotate(${headingDeg}deg);
             filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.6));
             transition: transform 0.3s ease;
+            z-index: 1;
           "
         >
           <path
@@ -64,7 +68,7 @@ const createDroneIcon = (id: string, headingDeg: number) => {
             0 0 8px rgba(0, 0, 0, 0.8);
           white-space: nowrap;
           pointer-events: none;
-          z-index: 10;
+          z-index: 2;
         ">
           ${displayId}
         </div>
