@@ -21,9 +21,20 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
       setDrones(updatedDrones);
 
       setSelectedDrones(prev => {
-        const newSet = new Set(prev);
         const currentIds = new Set(updatedDrones.map(d => d.id));
+        let hasChanged = false;
 
+        prev.forEach(id => {
+          if (!currentIds.has(id)) {
+            hasChanged = true;
+          }
+        });
+
+        if (!hasChanged) {
+          return prev;
+        }
+
+        const newSet = new Set(prev);
         prev.forEach(id => {
           if (!currentIds.has(id)) {
             newSet.delete(id);
