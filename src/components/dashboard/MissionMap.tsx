@@ -58,6 +58,11 @@ export default function MissionMap({ drones = [] }: MissionMapProps) {
   const [selectedWaypoint, setSelectedWaypoint] = useState<number | null>(null);
   const mapRef = useRef<L.Map>(null);
 
+  const dronesWithPosition = useMemo(
+    () => drones.filter(d => d.latitude !== undefined && d.longitude !== undefined),
+    [drones]
+  );
+
   const handleMapClick = (lat: number, lng: number) => {
     const newWaypoint: Waypoint = {
       id: Date.now(),
@@ -93,8 +98,12 @@ export default function MissionMap({ drones = [] }: MissionMapProps) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h4 className="text-slate-300 font-medium">Mission Waypoints</h4>
+        <h4 className="text-slate-300 font-medium">Mission Map</h4>
         <div className="flex gap-2">
+          <span className="text-xs text-slate-400">
+            {dronesWithPosition.length} drone{dronesWithPosition.length !== 1 ? 's' : ''}
+          </span>
+          <span className="text-slate-600">|</span>
           <button
             onClick={handleClearAll}
             disabled={waypoints.length === 0}

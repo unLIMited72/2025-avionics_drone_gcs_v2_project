@@ -80,9 +80,11 @@ export default function DroneMarker({ drone }: DroneMarkerProps) {
     !isFinite(drone.latitude) ||
     !isFinite(drone.longitude)
   ) {
+    console.log(`Drone ${drone.id}: Invalid position - lat: ${drone.latitude}, lon: ${drone.longitude}`);
     return null;
   }
 
+  console.log(`Rendering Drone ${drone.id} at [${drone.latitude}, ${drone.longitude}] heading: ${drone.headingDeg}`);
   const heading = drone.headingDeg !== undefined ? drone.headingDeg : 0;
 
   return (

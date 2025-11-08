@@ -123,6 +123,8 @@ class ROSConnection {
         const lon = msg.longitudes?.[i];
         const heading = msg.heading_degs?.[i];
 
+        console.log(`Drone ${id} raw data - lat: ${lat}, lon: ${lon}, heading: ${heading}`);
+
         return {
           id,
           connected: msg.heartbeats[i],
