@@ -171,7 +171,7 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
 
           {flightMode === 'mission' && canUseMission && (
             <div className="mt-4">
-              <MissionMap />
+              <MissionMap drones={drones} />
             </div>
           )}
 

@@ -7,6 +7,9 @@ export interface DroneStatus {
   ready: boolean;
   armed: boolean;
   status: 'Normal' | 'Warning' | 'Danger';
+  latitude?: number;
+  longitude?: number;
+  headingDeg?: number;
 }
 
 export interface UIStatusMessage {
@@ -17,6 +20,9 @@ export interface UIStatusMessage {
   flight_readies: boolean[];
   armeds: boolean[];
   status_in_flights: number[];
+  latitudes: number[];
+  longitudes: number[];
+  heading_degs: number[];
 }
 
 class ROSConnection {
@@ -113,6 +119,10 @@ class ROSConnection {
         const statusValue = statusArray[i];
         const status = statusMap[statusValue] !== undefined ? statusMap[statusValue] : 'Normal';
 
+        const lat = msg.latitudes?.[i];
+        const lon = msg.longitudes?.[i];
+        const heading = msg.heading_degs?.[i];
+
         return {
           id,
           connected: msg.heartbeats[i],
@@ -120,6 +130,9 @@ class ROSConnection {
           ready: msg.flight_readies[i],
           armed: msg.armeds[i],
           status,
+          latitude: (lat !== undefined && lat !== 0) ? lat : undefined,
+          longitude: (lon !== undefined && lon !== 0) ? lon : undefined,
+          headingDeg: heading !== undefined ? heading : undefined,
         };
       });
 

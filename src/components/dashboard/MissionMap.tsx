@@ -2,11 +2,17 @@ import { useState, useRef, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { MapPin } from 'lucide-react';
+import DroneMarker from './DroneMarker';
+import { DroneStatus } from '../../services/rosConnection';
 
 interface Waypoint {
   id: number;
   lat: number;
   lng: number;
+}
+
+interface MissionMapProps {
+  drones?: DroneStatus[];
 }
 
 const createNumberedIcon = (number: number, isSelected: boolean) => {
@@ -47,7 +53,7 @@ function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number
   return null;
 }
 
-export default function MissionMap() {
+export default function MissionMap({ drones = [] }: MissionMapProps) {
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
   const [selectedWaypoint, setSelectedWaypoint] = useState<number | null>(null);
   const mapRef = useRef<L.Map>(null);
@@ -115,6 +121,10 @@ export default function MissionMap() {
           />
 
           <MapClickHandler onMapClick={handleMapClick} />
+
+          {drones.map((drone) => (
+            <DroneMarker key={drone.id} drone={drone} />
+          ))}
 
           {waypoints.map((wp, index) => (
             <Marker
