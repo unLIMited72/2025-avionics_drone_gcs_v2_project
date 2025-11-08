@@ -66,13 +66,38 @@ class ROSConnection {
 
     this.uiStatusTopic.subscribe((message: any) => {
       this.lastMessageTime = Date.now();
-      const msg = message as UIStatusMessage;
+      const msg = message as any;
 
-      console.log('Raw ROS message:', JSON.stringify(msg, null, 2));
-      console.log('status_in_flights array:', msg.status_in_flights);
+      // Base64 디코딩 함수
+      const decodeBase64ToUint8Array = (base64: string): number[] => {
+        try {
+          const binaryString = atob(base64);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          return Array.from(bytes);
+        } catch (e) {
+          console.error('Base64 decoding error:', e);
+          return [];
+        }
+      };
 
-      const drones: DroneStatus[] = msg.drone_ids.map((id, i) => {
-        const statusValue = msg.status_in_flights[i];
+      // status_in_flights가 Base64 문자열인 경우 디코딩
+      let statusArray: number[];
+      if (typeof msg.status_in_flights === 'string') {
+        statusArray = decodeBase64ToUint8Array(msg.status_in_flights);
+        console.log('Decoded status_in_flights from Base64:', statusArray);
+      } else if (Array.isArray(msg.status_in_flights)) {
+        statusArray = msg.status_in_flights;
+        console.log('status_in_flights is already array:', statusArray);
+      } else {
+        statusArray = [];
+        console.error('Unexpected status_in_flights format:', msg.status_in_flights);
+      }
+
+      const drones: DroneStatus[] = msg.drone_ids.map((id: string, i: number) => {
+        const statusValue = statusArray[i];
         console.log(`Drone ${id}: Raw status value = ${statusValue}, type = ${typeof statusValue}`);
 
         const statusMap: { [key: number]: 'Normal' | 'Warning' | 'Danger' } = {
