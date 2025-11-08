@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import DroneStatusBar from './dashboard/DroneStatusBar';
 import MissionMap from './dashboard/MissionMap';
 import GyroControl from './dashboard/GyroControl';
+import { rosConnection, DroneStatus } from '../services/rosConnection';
 
 interface DashboardScreenProps {
   droneCount: number;
@@ -17,7 +18,8 @@ interface DronePosition {
 }
 
 export default function DashboardScreen({ droneCount, onDisconnect }: DashboardScreenProps) {
-  const [selectedDrones, setSelectedDrones] = useState<Set<number>>(new Set());
+  const [drones, setDrones] = useState<DroneStatus[]>([]);
+  const [selectedDrones, setSelectedDrones] = useState<Set<string>>(new Set());
   const [flightMode, setFlightMode] = useState<'mission' | 'gyro' | null>(null);
   const [targetAltitude, setTargetAltitude] = useState<number>(10);
   const [targetSpeed, setTargetSpeed] = useState<number>(5);
@@ -25,22 +27,28 @@ export default function DashboardScreen({ droneCount, onDisconnect }: DashboardS
   const [isAirborne, setIsAirborne] = useState(false);
   const [dronePositions, setDronePositions] = useState<DronePosition[]>([]);
 
-  const drones = useMemo(() =>
-    Array.from({ length: droneCount }, (_, index) => {
-      const statuses: Array<'normal' | 'warning' | 'danger'> = ['normal', 'warning', 'danger'];
-      return {
-        droneNumber: index + 1,
-        isConnected: true,
-        isFlightReady: index % 2 === 0,
-        isArmed: false,
-        flightStatus: statuses[index % 3] as 'normal' | 'warning' | 'danger',
-        battery: 85 - index * 10,
-        altitude: 0,
-        speed: 0,
-      };
-    }),
-    [droneCount]
-  );
+  useEffect(() => {
+    const unsubscribe = rosConnection.onStatusUpdate((updatedDrones) => {
+      setDrones(updatedDrones);
+
+      setSelectedDrones(prev => {
+        const newSet = new Set(prev);
+        const currentIds = new Set(updatedDrones.map(d => d.id));
+
+        prev.forEach(id => {
+          if (!currentIds.has(id)) {
+            newSet.delete(id);
+          }
+        });
+
+        return newSet;
+      });
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     const initialPositions: DronePosition[] = Array.from({ length: droneCount }, (_, index) => ({
@@ -65,13 +73,13 @@ export default function DashboardScreen({ droneCount, onDisconnect }: DashboardS
     return () => clearInterval(interval);
   }, [droneCount]);
 
-  const handleSelectDrone = (droneNumber: number) => {
+  const handleSelectDrone = (droneId: string) => {
     setSelectedDrones(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(droneNumber)) {
-        newSet.delete(droneNumber);
+      if (newSet.has(droneId)) {
+        newSet.delete(droneId);
       } else {
-        newSet.add(droneNumber);
+        newSet.add(droneId);
       }
 
       if (newSet.size === 0) {
@@ -82,6 +90,11 @@ export default function DashboardScreen({ droneCount, onDisconnect }: DashboardS
 
       return newSet;
     });
+  };
+
+  const handleDisconnectAll = () => {
+    rosConnection.disconnect();
+    onDisconnect();
   };
 
   const canUseMission = selectedDrones.size >= 1;
@@ -103,7 +116,7 @@ export default function DashboardScreen({ droneCount, onDisconnect }: DashboardS
             </div>
 
             <button
-              onClick={onDisconnect}
+              onClick={handleDisconnectAll}
               className="p-2 bg-red-500 hover:bg-red-600 rounded-lg transition-colors"
               title="Disconnect"
             >
@@ -114,23 +127,27 @@ export default function DashboardScreen({ droneCount, onDisconnect }: DashboardS
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">
-        <div className="space-y-3">
-          {drones.map((drone) => (
-            <DroneStatusBar
-              key={drone.droneNumber}
-              droneNumber={drone.droneNumber}
-              isConnected={drone.isConnected}
-              isFlightReady={drone.isFlightReady}
-              isArmed={drone.isArmed}
-              flightStatus={drone.flightStatus}
-              battery={drone.battery}
-              altitude={drone.altitude}
-              speed={drone.speed}
-              isSelected={selectedDrones.has(drone.droneNumber)}
-              onSelect={() => handleSelectDrone(drone.droneNumber)}
-            />
-          ))}
-        </div>
+        {drones.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-slate-400">Waiting for drone data...</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {drones.map((drone) => (
+              <DroneStatusBar
+                key={drone.id}
+                droneId={drone.id}
+                isConnected={drone.connected}
+                isFlightReady={drone.ready}
+                isArmed={drone.armed}
+                flightStatus={drone.status}
+                battery={drone.battery}
+                isSelected={selectedDrones.has(drone.id)}
+                onSelect={() => handleSelectDrone(drone.id)}
+              />
+            ))}
+          </div>
+        )}
 
 
         <div className="mt-6 p-4 bg-slate-800 rounded-lg border border-slate-700">

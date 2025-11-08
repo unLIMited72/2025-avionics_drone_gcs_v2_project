@@ -1,22 +1,20 @@
 import { Battery, Link, CheckCircle, XCircle, Shield, ShieldOff, AlertTriangle, AlertCircle } from 'lucide-react';
 
-type FlightStatus = 'normal' | 'warning' | 'danger';
+type FlightStatus = 'Normal' | 'Warning' | 'Danger';
 
 interface DroneStatusBarProps {
-  droneNumber: number;
+  droneId: string;
   isConnected: boolean;
   isFlightReady: boolean;
   isArmed: boolean;
   flightStatus: FlightStatus;
   battery: number;
-  altitude: number;
-  speed: number;
   isSelected: boolean;
   onSelect: () => void;
 }
 
 export default function DroneStatusBar({
-  droneNumber,
+  droneId,
   isConnected,
   isFlightReady,
   isArmed,
@@ -38,7 +36,7 @@ export default function DroneStatusBar({
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <span className="text-slate-400 text-xs font-medium">Drone</span>
-          <span className="text-white text-sm font-bold">#{droneNumber}</span>
+          <span className="text-white text-sm font-bold">{droneId}</span>
         </div>
 
         <div className="flex items-center gap-3 flex-1">
@@ -79,19 +77,19 @@ export default function DroneStatusBar({
               </span>
             </div>
             <div className="flex items-center gap-1.5">
-              {flightStatus === 'normal' && (
+              {flightStatus === 'Normal' && (
                 <>
                   <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full"></div>
                   <span className="text-xs text-emerald-500 font-medium">Normal</span>
                 </>
               )}
-              {flightStatus === 'warning' && (
+              {flightStatus === 'Warning' && (
                 <>
                   <AlertTriangle className="w-3 h-3 text-yellow-500 animate-pulse" />
                   <span className="text-xs text-yellow-500 font-medium">Warning</span>
                 </>
               )}
-              {flightStatus === 'danger' && (
+              {flightStatus === 'Danger' && (
                 <>
                   <AlertCircle className="w-3 h-3 text-red-500 animate-pulse" />
                   <span className="text-xs text-red-500 font-medium">Danger</span>

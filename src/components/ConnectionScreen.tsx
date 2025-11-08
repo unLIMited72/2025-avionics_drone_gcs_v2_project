@@ -1,26 +1,40 @@
 import { useState, useEffect } from 'react';
 import { Radio, Wifi, WifiOff } from 'lucide-react';
+import { rosConnection } from '../services/rosConnection';
 
 interface ConnectionScreenProps {
   onConnect: (password: string, availableDrones: number) => void;
 }
 
+const ROS_BRIDGE_URL = 'wss://px4gcsserver.ngrok.app:9090';
+
 export default function ConnectionScreen({ onConnect }: ConnectionScreenProps) {
   const [password, setPassword] = useState('');
   const [serverConnected, setServerConnected] = useState(false);
-  const [availableDrones, setAvailableDrones] = useState(4);
+  const [availableDrones, setAvailableDrones] = useState(0);
   const [isConnecting, setIsConnecting] = useState(true);
 
   useEffect(() => {
-    const checkServerConnection = async () => {
-      setIsConnecting(true);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setServerConnected(true);
-      setAvailableDrones(4);
-      setIsConnecting(false);
-    };
+    setIsConnecting(true);
 
-    checkServerConnection();
+    const unsubscribeConnection = rosConnection.onConnectionChange((connected) => {
+      setServerConnected(connected);
+      setIsConnecting(false);
+      if (!connected) {
+        setAvailableDrones(0);
+      }
+    });
+
+    const unsubscribeStatus = rosConnection.onStatusUpdate((drones) => {
+      setAvailableDrones(drones.length);
+    });
+
+    rosConnection.connect(ROS_BRIDGE_URL);
+
+    return () => {
+      unsubscribeConnection();
+      unsubscribeStatus();
+    };
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
