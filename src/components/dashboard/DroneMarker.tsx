@@ -1,9 +1,11 @@
+import { useMemo } from 'react';
 import { Marker, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 import { DroneStatus } from '../../services/rosConnection';
 
 interface DroneMarkerProps {
   drone: DroneStatus;
+  isSelected: boolean;
 }
 
 const extractDroneNumber = (id: string): string => {
@@ -11,8 +13,20 @@ const extractDroneNumber = (id: string): string => {
   return match ? match[0] : id;
 };
 
-const createDroneIcon = (id: string, headingDeg: number) => {
+const normHeading = (deg?: number): number => {
+  if (!isFinite(deg as number)) return 0;
+  let d = (deg as number) % 360;
+  if (d < 0) d += 360;
+  return d;
+};
+
+const createDroneIcon = (id: string, headingDeg: number, isSelected: boolean) => {
   const displayId = extractDroneNumber(id);
+
+  const arrowFill = isSelected ? '#0ea5e9' : '#ef4444';
+  const arrowStroke = isSelected ? '#0284c7' : '#7f1d1d';
+  const scale = isSelected ? 1.15 : 1;
+  const shadowIntensity = isSelected ? 0.7 : 0.5;
 
   return L.divIcon({
     className: 'custom-drone-icon',
@@ -24,6 +38,8 @@ const createDroneIcon = (id: string, headingDeg: number) => {
         display: flex;
         align-items: center;
         justify-content: center;
+        transform: scale(${scale});
+        transition: transform 0.3s ease;
       ">
         <svg
           width="90"
@@ -34,22 +50,22 @@ const createDroneIcon = (id: string, headingDeg: number) => {
             top: 0;
             left: 0;
             transform: rotate(${headingDeg}deg);
-            filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.5));
+            filter: drop-shadow(0 6px 12px rgba(0, 0, 0, ${shadowIntensity}));
             transition: transform 0.3s ease;
             z-index: 1;
           "
         >
           <path
             d="M45 13 L60 67 L45 61 L30 67 Z"
-            fill="#ef4444"
-            stroke="#7f1d1d"
-            stroke-width="3"
+            fill="${arrowFill}"
+            stroke="${arrowStroke}"
+            stroke-width="${isSelected ? 4 : 3}"
           />
           <circle
             cx="45"
             cy="45"
             r="6"
-            fill="#7f1d1d"
+            fill="${arrowStroke}"
           />
         </svg>
         <div style="
@@ -58,7 +74,7 @@ const createDroneIcon = (id: string, headingDeg: number) => {
           left: 50%;
           transform: translate(-50%, -50%);
           color: white;
-          font-weight: 300;
+          font-weight: ${isSelected ? 'bold' : '300'};
           font-size: 15px;
           text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
           white-space: nowrap;
@@ -74,24 +90,25 @@ const createDroneIcon = (id: string, headingDeg: number) => {
   });
 };
 
-export default function DroneMarker({ drone }: DroneMarkerProps) {
+export default function DroneMarker({ drone, isSelected }: DroneMarkerProps) {
   if (
-    drone.latitude === undefined ||
-    drone.longitude === undefined ||
-    !isFinite(drone.latitude) ||
-    !isFinite(drone.longitude)
+    !isFinite(drone.latitude as number) ||
+    !isFinite(drone.longitude as number)
   ) {
-    console.log(`Drone ${drone.id}: Invalid position - lat: ${drone.latitude}, lon: ${drone.longitude}`);
     return null;
   }
 
-  console.log(`Rendering Drone ${drone.id} at [${drone.latitude}, ${drone.longitude}] heading: ${drone.headingDeg}`);
-  const heading = drone.headingDeg !== undefined ? drone.headingDeg : 0;
+  const heading = normHeading(drone.headingDeg);
+
+  const icon = useMemo(
+    () => createDroneIcon(drone.id, heading, isSelected),
+    [drone.id, heading, isSelected]
+  );
 
   return (
     <Marker
-      position={[drone.latitude, drone.longitude]}
-      icon={createDroneIcon(drone.id, heading)}
+      position={[drone.latitude!, drone.longitude!]}
+      icon={icon}
     >
       <Tooltip direction="top" offset={[0, -20]} opacity={0.9}>
         <div style={{ fontSize: '12px' }}>

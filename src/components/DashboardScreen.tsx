@@ -31,9 +31,13 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
           }
         });
 
-        // 실제로 변경된 경우에만 새 Set 반환
+        // 실제로 내용이 동일한 경우에만 prev 반환
         if (newSet.size === prev.size) {
-          return prev;
+          let same = true;
+          prev.forEach(id => {
+            if (!newSet.has(id)) same = false;
+          });
+          if (same) return prev;
         }
 
         return newSet;
@@ -166,7 +170,7 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
 
           {flightMode === 'mission' && canUseMission && (
             <div className="mt-4">
-              <MissionMap drones={drones} />
+              <MissionMap drones={drones} selectedIds={selectedDrones} />
             </div>
           )}
 

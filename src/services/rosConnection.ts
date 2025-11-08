@@ -123,8 +123,6 @@ class ROSConnection {
         const lon = msg.longitudes?.[i];
         const heading = msg.heading_degs?.[i];
 
-        console.log(`Drone ${id} raw data - lat: ${lat}, lon: ${lon}, heading: ${heading}`);
-
         return {
           id,
           connected: msg.heartbeats[i],
@@ -147,9 +145,12 @@ class ROSConnection {
       clearInterval(this.connectionCheckInterval);
     }
 
+    // 타임아웃을 10초로 증가하여 순간적인 지연에 강건하게 대응
     this.connectionCheckInterval = setInterval(() => {
       const now = Date.now();
-      if (this.lastMessageTime > 0 && now - this.lastMessageTime > 3000) {
+      if (this.lastMessageTime > 0 && now - this.lastMessageTime > 10000) {
+        // 빈 배열 대신 마지막 상태를 유지하되 connected: false로 표시하도록 개선 가능
+        // 현재는 요구사항에 따라 타임아웃만 증가
         this.notifyStatusUpdate([]);
       }
     }, 1000);

@@ -13,6 +13,7 @@ interface Waypoint {
 
 interface MissionMapProps {
   drones?: DroneStatus[];
+  selectedIds?: Set<string>;
 }
 
 const createNumberedIcon = (number: number, isSelected: boolean) => {
@@ -53,7 +54,7 @@ function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number
   return null;
 }
 
-export default function MissionMap({ drones = [] }: MissionMapProps) {
+export default function MissionMap({ drones = [], selectedIds = new Set() }: MissionMapProps) {
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
   const [selectedWaypoint, setSelectedWaypoint] = useState<number | null>(null);
   const mapRef = useRef<L.Map>(null);
@@ -144,7 +145,11 @@ export default function MissionMap({ drones = [] }: MissionMapProps) {
           <MapClickHandler onMapClick={handleMapClick} />
 
           {drones.map((drone) => (
-            <DroneMarker key={drone.id} drone={drone} />
+            <DroneMarker
+              key={drone.id}
+              drone={drone}
+              isSelected={selectedIds.has(drone.id)}
+            />
           ))}
 
           {waypoints.map((wp, index) => (
