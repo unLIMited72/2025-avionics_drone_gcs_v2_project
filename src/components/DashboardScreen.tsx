@@ -15,9 +15,17 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
   const [flightMode, setFlightMode] = useState<'mission' | 'gyro' | null>(null);
   const [targetAltitude, setTargetAltitude] = useState<number>(10);
   const [targetSpeed, setTargetSpeed] = useState<number>(5);
+  const [isConnected, setIsConnected] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = rosConnection.onStatusUpdate((updatedDrones) => {
+    if (!rosConnection.isConnected()) {
+      setIsConnected(false);
+      return;
+    }
+
+    setIsConnected(true);
+
+    const unsubscribeStatus = rosConnection.onStatusUpdate((updatedDrones) => {
       setDrones(updatedDrones);
 
       setSelectedDrones(prev => {
@@ -34,8 +42,16 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
       });
     });
 
+    const unsubscribeConnection = rosConnection.onConnectionChange((connected) => {
+      setIsConnected(connected);
+      if (!connected) {
+        setDrones([]);
+      }
+    });
+
     return () => {
-      unsubscribe();
+      unsubscribeStatus();
+      unsubscribeConnection();
     };
   }, []);
 
@@ -66,6 +82,17 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
 
   const canUseMission = selectedDrones.size >= 1;
   const canUseGyro = selectedDrones.size === 1;
+
+  if (!isConnected) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center bg-slate-950">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 border-4 border-slate-600 border-t-sky-500 rounded-full animate-spin mx-auto"></div>
+          <p className="text-slate-400">Waiting for ROS bridge connection...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col bg-slate-950">
