@@ -63,6 +63,13 @@ export default function MissionMap({ drones = [] }: MissionMapProps) {
     [drones]
   );
 
+  const mapCenter = useMemo(() => {
+    if (dronesWithPosition.length > 0 && dronesWithPosition[0].latitude && dronesWithPosition[0].longitude) {
+      return [dronesWithPosition[0].latitude, dronesWithPosition[0].longitude] as [number, number];
+    }
+    return [37.5665, 126.9780] as [number, number];
+  }, [dronesWithPosition]);
+
   const handleMapClick = (lat: number, lng: number) => {
     const newWaypoint: Waypoint = {
       id: Date.now(),
@@ -119,10 +126,11 @@ export default function MissionMap({ drones = [] }: MissionMapProps) {
 
       <div className="relative w-full h-96 rounded-lg border-2 border-slate-700 overflow-hidden">
         <MapContainer
-          center={[37.5665, 126.9780]}
-          zoom={15}
+          center={mapCenter}
+          zoom={17}
           style={{ height: '100%', width: '100%' }}
           ref={mapRef}
+          key={`${mapCenter[0]}-${mapCenter[1]}`}
         >
           <TileLayer
             url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
