@@ -27,9 +27,18 @@ class ROSConnection {
   private reconnectTimer: NodeJS.Timeout | null = null;
   private lastMessageTime: number = 0;
   private connectionCheckInterval: NodeJS.Timeout | null = null;
+  private isDisconnecting: boolean = false;
 
   connect(url: string) {
     this.disconnect();
+
+    // HTTPS 환경에서 자동으로 wss://로 변경
+    if (typeof window !== 'undefined' && window.location.protocol === 'https:' && url.startsWith('ws://')) {
+      url = url.replace('ws://', 'wss://');
+      console.log('Automatically upgraded to wss://');
+    }
+
+    console.log(`Connecting to ROS bridge at: ${url}`);
 
     this.ros = new ROSLIB.Ros({
       url: url
@@ -132,17 +141,23 @@ class ROSConnection {
   }
 
   private scheduleReconnect(url: string) {
+    if (this.isDisconnecting) {
+      return;
+    }
+
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
     }
 
     this.reconnectTimer = setTimeout(() => {
-      console.log('Attempting to reconnect...');
+      console.warn('Attempting to reconnect to ROS bridge...');
       this.connect(url);
-    }, 3000);
+    }, 5000);
   }
 
   disconnect() {
+    this.isDisconnecting = true;
+
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
@@ -159,8 +174,19 @@ class ROSConnection {
     }
 
     if (this.ros) {
-      this.ros.close();
-      this.ros = null;
+      try {
+        console.log('Closing existing ROS connection...');
+        this.ros.close();
+      } catch (e) {
+        console.warn('ROS close error:', e);
+      }
+
+      setTimeout(() => {
+        this.ros = null;
+        this.isDisconnecting = false;
+      }, 500);
+    } else {
+      this.isDisconnecting = false;
     }
 
     this.lastMessageTime = 0;
