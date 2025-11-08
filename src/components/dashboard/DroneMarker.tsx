@@ -50,9 +50,9 @@ const createDroneIcon = (id: string, headingDeg: number) => {
         </svg>
         <div style="
           position: absolute;
-          top: 8px;
+          top: 50%;
           left: 50%;
-          transform: translateX(-50%);
+          transform: translate(-50%, -50%);
           color: white;
           font-weight: 900;
           font-size: 24px;
@@ -64,6 +64,7 @@ const createDroneIcon = (id: string, headingDeg: number) => {
             0 0 8px rgba(0, 0, 0, 0.8);
           white-space: nowrap;
           pointer-events: none;
+          z-index: 10;
         ">
           ${displayId}
         </div>
