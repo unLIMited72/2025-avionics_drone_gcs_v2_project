@@ -68,14 +68,26 @@ class ROSConnection {
       this.lastMessageTime = Date.now();
       const msg = message as UIStatusMessage;
 
-      const drones: DroneStatus[] = msg.drone_ids.map((id, i) => ({
-        id,
-        connected: msg.heartbeats[i],
-        battery: msg.battery_percentages[i],
-        ready: msg.flight_readies[i],
-        armed: msg.armeds[i],
-        status: ['Normal', 'Warning', 'Danger'][msg.status_in_flights[i]] as 'Normal' | 'Warning' | 'Danger',
-      }));
+      const drones: DroneStatus[] = msg.drone_ids.map((id, i) => {
+        const statusValue = msg.status_in_flights[i];
+        const statusMap: { [key: number]: 'Normal' | 'Warning' | 'Danger' } = {
+          0: 'Normal',
+          1: 'Warning',
+          2: 'Danger'
+        };
+        const status = statusMap[statusValue] || 'Normal';
+
+        console.log(`Drone ${id}: status_in_flight=${statusValue}, mapped status=${status}`);
+
+        return {
+          id,
+          connected: msg.heartbeats[i],
+          battery: msg.battery_percentages[i],
+          ready: msg.flight_readies[i],
+          armed: msg.armeds[i],
+          status,
+        };
+      });
 
       this.notifyStatusUpdate(drones);
     });

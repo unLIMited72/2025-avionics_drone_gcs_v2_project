@@ -23,6 +23,8 @@ export default function DroneStatusBar({
   isSelected,
   onSelect,
 }: DroneStatusBarProps) {
+  console.log(`DroneStatusBar ${droneId}: flightStatus=${flightStatus}, type=${typeof flightStatus}`);
+
   const getBatteryColor = (level: number) => {
     if (level > 50) return 'text-emerald-500';
     if (level > 20) return 'text-yellow-500';
@@ -77,22 +79,25 @@ export default function DroneStatusBar({
               </span>
             </div>
             <div className="flex items-center gap-1.5">
-              {flightStatus === 'Normal' && (
+              {flightStatus === 'Normal' ? (
                 <>
                   <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full"></div>
                   <span className="text-xs text-emerald-500 font-medium">Normal</span>
                 </>
-              )}
-              {flightStatus === 'Warning' && (
+              ) : flightStatus === 'Warning' ? (
                 <>
                   <AlertTriangle className="w-3 h-3 text-yellow-500 animate-pulse" />
                   <span className="text-xs text-yellow-500 font-medium">Warning</span>
                 </>
-              )}
-              {flightStatus === 'Danger' && (
+              ) : flightStatus === 'Danger' ? (
                 <>
                   <AlertCircle className="w-3 h-3 text-red-500 animate-pulse" />
                   <span className="text-xs text-red-500 font-medium">Danger</span>
+                </>
+              ) : (
+                <>
+                  <div className="w-2.5 h-2.5 bg-slate-500 rounded-full"></div>
+                  <span className="text-xs text-slate-500 font-medium">Unknown ({flightStatus})</span>
                 </>
               )}
             </div>
