@@ -42,7 +42,7 @@ class ROSConnection {
       this.startConnectionCheck();
     });
 
-    this.ros.on('error', (error) => {
+    this.ros.on('error', (error?: Error) => {
       console.error('ROS connection error:', error);
       this.notifyConnectionStatus(false);
       this.scheduleReconnect(url);
@@ -87,27 +87,22 @@ class ROSConnection {
       let statusArray: number[];
       if (typeof msg.status_in_flights === 'string') {
         statusArray = decodeBase64ToUint8Array(msg.status_in_flights);
-        console.log('Decoded status_in_flights from Base64:', statusArray);
       } else if (Array.isArray(msg.status_in_flights)) {
         statusArray = msg.status_in_flights;
-        console.log('status_in_flights is already array:', statusArray);
       } else {
         statusArray = [];
         console.error('Unexpected status_in_flights format:', msg.status_in_flights);
       }
 
+      const statusMap: { [key: number]: 'Normal' | 'Warning' | 'Danger' } = {
+        0: 'Normal',
+        1: 'Warning',
+        2: 'Danger'
+      };
+
       const drones: DroneStatus[] = msg.drone_ids.map((id: string, i: number) => {
         const statusValue = statusArray[i];
-        console.log(`Drone ${id}: Raw status value = ${statusValue}, type = ${typeof statusValue}`);
-
-        const statusMap: { [key: number]: 'Normal' | 'Warning' | 'Danger' } = {
-          0: 'Normal',
-          1: 'Warning',
-          2: 'Danger'
-        };
         const status = statusMap[statusValue] !== undefined ? statusMap[statusValue] : 'Normal';
-
-        console.log(`Drone ${id}: status_in_flight=${statusValue}, mapped status=${status}`);
 
         return {
           id,
@@ -119,7 +114,6 @@ class ROSConnection {
         };
       });
 
-      console.log('Final drones array:', drones);
       this.notifyStatusUpdate(drones);
     });
   }

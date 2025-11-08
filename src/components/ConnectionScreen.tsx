@@ -3,7 +3,7 @@ import { Radio, Wifi, WifiOff } from 'lucide-react';
 import { rosConnection } from '../services/rosConnection';
 
 interface ConnectionScreenProps {
-  onConnect: (password: string, availableDrones: number) => void;
+  onConnect: () => void;
 }
 
 const ROS_BRIDGE_URL = 'wss://px4gcsserver.ngrok.app';
@@ -40,7 +40,7 @@ export default function ConnectionScreen({ onConnect }: ConnectionScreenProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (password.trim() && serverConnected) {
-      onConnect(password, availableDrones);
+      onConnect();
     }
   };
 

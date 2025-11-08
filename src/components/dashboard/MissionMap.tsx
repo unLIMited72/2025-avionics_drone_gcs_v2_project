@@ -9,17 +9,6 @@ interface Waypoint {
   lng: number;
 }
 
-interface DronePosition {
-  droneNumber: number;
-  lat: number;
-  lng: number;
-  heading: number;
-}
-
-interface MissionMapProps {
-  dronePositions: DronePosition[];
-}
-
 const createNumberedIcon = (number: number, isSelected: boolean) => {
   return L.divIcon({
     className: 'custom-div-icon',
@@ -48,44 +37,6 @@ const createNumberedIcon = (number: number, isSelected: boolean) => {
   });
 };
 
-const createDroneIcon = (number: number, heading: number) => {
-  return L.divIcon({
-    className: 'custom-drone-icon',
-    html: `
-      <div style="
-        width: 80px;
-        height: 80px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transform: rotate(${heading}deg);
-      ">
-        <svg width="80" height="80" viewBox="0 0 80 80">
-          <defs>
-            <filter id="shadow-${number}" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
-              <feOffset dx="0" dy="3" result="offsetblur"/>
-              <feComponentTransfer>
-                <feFuncA type="linear" slope="0.6"/>
-              </feComponentTransfer>
-              <feMerge>
-                <feMergeNode/>
-                <feMergeNode in="SourceGraphic"/>
-              </feMerge>
-            </filter>
-          </defs>
-          <g filter="url(#shadow-${number})">
-            <path d="M 40 10 L 56 50 L 40 44 L 24 50 Z" fill="#ef4444" stroke="#991b1b" stroke-width="3"/>
-            <circle cx="40" cy="40" r="12" fill="#7f1d1d" stroke="#ffffff" stroke-width="2"/>
-            <text x="40" y="46" text-anchor="middle" fill="white" font-size="14" font-weight="bold">${number}</text>
-          </g>
-        </svg>
-      </div>
-    `,
-    iconSize: [80, 80],
-    iconAnchor: [40, 40],
-  });
-};
 
 function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number) => void }) {
   useMapEvents({
@@ -96,7 +47,7 @@ function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number
   return null;
 }
 
-export default function MissionMap({ dronePositions }: MissionMapProps) {
+export default function MissionMap() {
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
   const [selectedWaypoint, setSelectedWaypoint] = useState<number | null>(null);
   const mapRef = useRef<L.Map>(null);
@@ -164,15 +115,6 @@ export default function MissionMap({ dronePositions }: MissionMapProps) {
           />
 
           <MapClickHandler onMapClick={handleMapClick} />
-
-          {dronePositions.map((drone) => (
-            <Marker
-              key={`drone-${drone.droneNumber}`}
-              position={[drone.lat, drone.lng]}
-              icon={createDroneIcon(drone.droneNumber, drone.heading)}
-              zIndexOffset={1000}
-            />
-          ))}
 
           {waypoints.map((wp, index) => (
             <Marker

@@ -23,8 +23,6 @@ export default function DroneStatusBar({
   isSelected,
   onSelect,
 }: DroneStatusBarProps) {
-  console.log(`DroneStatusBar ${droneId}: flightStatus=${flightStatus}, type=${typeof flightStatus}`);
-
   const getBatteryColor = (level: number) => {
     if (level > 50) return 'text-emerald-500';
     if (level > 20) return 'text-yellow-500';

@@ -6,26 +6,15 @@ import GyroControl from './dashboard/GyroControl';
 import { rosConnection, DroneStatus } from '../services/rosConnection';
 
 interface DashboardScreenProps {
-  droneCount: number;
   onDisconnect: () => void;
 }
 
-interface DronePosition {
-  droneNumber: number;
-  lat: number;
-  lng: number;
-  heading: number;
-}
-
-export default function DashboardScreen({ droneCount, onDisconnect }: DashboardScreenProps) {
+export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) {
   const [drones, setDrones] = useState<DroneStatus[]>([]);
   const [selectedDrones, setSelectedDrones] = useState<Set<string>>(new Set());
   const [flightMode, setFlightMode] = useState<'mission' | 'gyro' | null>(null);
   const [targetAltitude, setTargetAltitude] = useState<number>(10);
   const [targetSpeed, setTargetSpeed] = useState<number>(5);
-  const [missionActive, setMissionActive] = useState(false);
-  const [isAirborne, setIsAirborne] = useState(false);
-  const [dronePositions, setDronePositions] = useState<DronePosition[]>([]);
 
   useEffect(() => {
     const unsubscribe = rosConnection.onStatusUpdate((updatedDrones) => {
@@ -50,28 +39,6 @@ export default function DashboardScreen({ droneCount, onDisconnect }: DashboardS
     };
   }, []);
 
-  useEffect(() => {
-    const initialPositions: DronePosition[] = Array.from({ length: droneCount }, (_, index) => ({
-      droneNumber: index + 1,
-      lat: 37.5665 + (Math.random() - 0.5) * 0.01,
-      lng: 126.9780 + (Math.random() - 0.5) * 0.01,
-      heading: Math.random() * 360,
-    }));
-    setDronePositions(initialPositions);
-
-    const interval = setInterval(() => {
-      setDronePositions(prev =>
-        prev.map(pos => ({
-          ...pos,
-          lat: pos.lat + (Math.random() - 0.5) * 0.0001,
-          lng: pos.lng + (Math.random() - 0.5) * 0.0001,
-          heading: (pos.heading + (Math.random() - 0.5) * 10) % 360,
-        }))
-      );
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [droneCount]);
 
   const handleSelectDrone = (droneId: string) => {
     setSelectedDrones(prev => {
@@ -193,7 +160,7 @@ export default function DashboardScreen({ droneCount, onDisconnect }: DashboardS
 
           {flightMode === 'mission' && canUseMission && (
             <div className="mt-4">
-              <MissionMap dronePositions={dronePositions} />
+              <MissionMap />
             </div>
           )}
 
@@ -284,50 +251,15 @@ export default function DashboardScreen({ droneCount, onDisconnect }: DashboardS
           <h3 className="text-white font-semibold mb-3">Flight Commands</h3>
 
           {flightMode === 'mission' && canUseMission && (
-            <div className="flex gap-3">
-              <button
-                disabled={selectedDrones.size === 0}
-                onClick={() => setMissionActive(!missionActive)}
-                className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all transform active:scale-95 ${
-                  selectedDrones.size > 0
-                    ? missionActive
-                      ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-600/50 hover:scale-105'
-                      : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/50 hover:scale-105'
-                    : 'bg-slate-700 text-slate-500 cursor-not-allowed'
-                }`}
-              >
-                {missionActive ? 'Stop Mission' : 'Start Mission'}
-              </button>
-              <button
-                disabled={selectedDrones.size === 0}
-                onClick={() => {
-                  setMissionActive(false);
-                }}
-                className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all transform active:scale-95 ${
-                  selectedDrones.size > 0
-                    ? 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/50 hover:scale-105'
-                    : 'bg-slate-700 text-slate-500 cursor-not-allowed'
-                }`}
-              >
-                Emergency Return
-              </button>
+            <div className="text-center text-slate-400 py-3">
+              Mission commands will be implemented
             </div>
           )}
 
           {flightMode === 'gyro' && canUseGyro && (
-            <button
-              disabled={selectedDrones.size === 0}
-              onClick={() => setIsAirborne(!isAirborne)}
-              className={`w-full px-6 py-3 rounded-lg font-semibold transition-all transform active:scale-95 ${
-                selectedDrones.size > 0
-                  ? isAirborne
-                    ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-600/50 hover:scale-105'
-                    : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/50 hover:scale-105'
-                  : 'bg-slate-700 text-slate-500 cursor-not-allowed'
-              }`}
-            >
-              {isAirborne ? 'Land' : 'Takeoff'}
-            </button>
+            <div className="text-center text-slate-400 py-3">
+              Gyro flight commands will be implemented
+            </div>
           )}
 
           {!flightMode && selectedDrones.size > 0 && (

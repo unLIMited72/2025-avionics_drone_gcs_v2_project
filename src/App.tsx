@@ -4,19 +4,13 @@ import DashboardScreen from './components/DashboardScreen';
 
 function App() {
   const [isConnected, setIsConnected] = useState(false);
-  const [userPassword, setUserPassword] = useState('');
-  const [droneCount, setDroneCount] = useState(4);
 
-  const handleConnect = (password: string, availableDrones: number) => {
-    setUserPassword(password);
-    setDroneCount(availableDrones);
+  const handleConnect = () => {
     setIsConnected(true);
   };
 
   const handleDisconnect = () => {
     setIsConnected(false);
-    setUserPassword('');
-    setDroneCount(4);
   };
 
   return (
@@ -24,10 +18,7 @@ function App() {
       {!isConnected ? (
         <ConnectionScreen onConnect={handleConnect} />
       ) : (
-        <DashboardScreen
-          droneCount={droneCount}
-          onDisconnect={handleDisconnect}
-        />
+        <DashboardScreen onDisconnect={handleDisconnect} />
       )}
     </div>
   );

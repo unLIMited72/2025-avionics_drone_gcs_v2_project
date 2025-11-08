@@ -1,12 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Smartphone } from 'lucide-react';
 
-interface GyroData {
-  alpha: number;
-  beta: number;
-  gamma: number;
-}
-
 interface DroneControl {
   roll: number;
   pitch: number;
@@ -14,7 +8,6 @@ interface DroneControl {
 }
 
 export default function GyroControl() {
-  const [gyroData, setGyroData] = useState<GyroData>({ alpha: 0, beta: 0, gamma: 0 });
   const [droneControl, setDroneControl] = useState<DroneControl>({ roll: 0, pitch: 0, yaw: 0 });
   const [manualYaw, setManualYaw] = useState<number>(0);
   const [isSupported, setIsSupported] = useState(true);
@@ -36,8 +29,6 @@ export default function GyroControl() {
       if (!initialOrientation.current) {
         initialOrientation.current = { alpha, beta, gamma };
       }
-
-      setGyroData({ alpha, beta, gamma });
 
       if (isHoldMode) {
         setDroneControl({ roll: 0, pitch: 0, yaw: manualYaw });
