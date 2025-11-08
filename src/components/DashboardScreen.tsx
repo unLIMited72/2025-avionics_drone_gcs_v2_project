@@ -20,26 +20,21 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
     const unsubscribe = rosConnection.onStatusUpdate((updatedDrones) => {
       setDrones(updatedDrones);
 
+      // 더 이상 존재하지 않는 드론만 선택 해제
       setSelectedDrones(prev => {
         const currentIds = new Set(updatedDrones.map(d => d.id));
-        let hasChanged = false;
+        const newSet = new Set<string>();
 
         prev.forEach(id => {
-          if (!currentIds.has(id)) {
-            hasChanged = true;
+          if (currentIds.has(id)) {
+            newSet.add(id);
           }
         });
 
-        if (!hasChanged) {
+        // 실제로 변경된 경우에만 새 Set 반환
+        if (newSet.size === prev.size) {
           return prev;
         }
-
-        const newSet = new Set(prev);
-        prev.forEach(id => {
-          if (!currentIds.has(id)) {
-            newSet.delete(id);
-          }
-        });
 
         return newSet;
       });
