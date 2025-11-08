@@ -23,27 +23,18 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
       // 더 이상 존재하지 않는 드론만 선택 해제
       setSelectedDrones(prev => {
         const currentIds = new Set(updatedDrones.map(d => d.id));
-
-        // 모든 선택된 드론이 여전히 존재하는지 확인
-        let needsUpdate = false;
-        prev.forEach(id => {
-          if (!currentIds.has(id)) {
-            needsUpdate = true;
-          }
-        });
-
-        // 변경이 필요 없으면 기존 Set 반환
-        if (!needsUpdate) {
-          return prev;
-        }
-
-        // 존재하는 드론만 유지
         const newSet = new Set<string>();
+
         prev.forEach(id => {
           if (currentIds.has(id)) {
             newSet.add(id);
           }
         });
+
+        // 실제로 변경된 경우에만 새 Set 반환
+        if (newSet.size === prev.size) {
+          return prev;
+        }
 
         return newSet;
       });
