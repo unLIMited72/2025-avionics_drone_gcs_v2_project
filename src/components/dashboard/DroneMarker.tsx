@@ -40,7 +40,7 @@ const createDroneIcon = (id: string, headingDeg: number) => {
           "
         >
           <path
-            d="M45 8 L55 72 L45 66 L35 72 Z"
+            d="M45 8 L60 72 L45 66 L30 72 Z"
             fill="#ef4444"
             stroke="#7f1d1d"
             stroke-width="3"
