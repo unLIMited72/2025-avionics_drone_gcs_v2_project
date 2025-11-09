@@ -34,6 +34,7 @@ class ROSConnection {
   private lastMessageTime: number = 0;
   private connectionCheckInterval: NodeJS.Timeout | null = null;
   private isDisconnecting: boolean = false;
+  private connected: boolean = false;
 
   connect(url: string) {
     this.disconnect();
@@ -50,6 +51,7 @@ class ROSConnection {
 
     this.ros.on('connection', () => {
       console.log('ROS bridge connected');
+      this.connected = true;
       this.notifyConnectionStatus(true);
 
       setTimeout(() => {
@@ -60,12 +62,14 @@ class ROSConnection {
 
     this.ros.on('error', (error?: Error) => {
       console.error('ROS connection error:', error);
+      this.connected = false;
       this.notifyConnectionStatus(false);
       this.scheduleReconnect(url);
     });
 
     this.ros.on('close', () => {
       console.log('ROS connection closed');
+      this.connected = false;
       this.notifyConnectionStatus(false);
       this.scheduleReconnect(url);
     });
@@ -204,6 +208,7 @@ class ROSConnection {
     }
 
     this.lastMessageTime = 0;
+    this.connected = false;
     this.notifyConnectionStatus(false);
   }
 
@@ -230,7 +235,7 @@ class ROSConnection {
   }
 
   isConnected(): boolean {
-    return this.ros !== null && this.ros.isConnected;
+    return this.connected;
   }
 
   getRos(): ROSLIB.Ros | null {
