@@ -27,7 +27,13 @@ type LandingMode = 'HOME' | 'LAST_WAYPOINT';
 interface MissionPlanPayload {
   mission_id: string;
   drone_ids: string[];
-  waypoints: { seq: number; lat: number; lon: number }[];
+  waypoints: {
+    seq: number;
+    lat: number;
+    lon: number;
+    alt: number;
+    hold_time: number;
+  }[];
   cruise_altitude_m: number;
   cruise_speed_mps: number;
   landing_mode: LandingMode;
@@ -201,6 +207,11 @@ export default function MissionMap({
 
     if (waypoints.length === 0) {
       alert('Add at least one waypoint.');
+      return null;
+    }
+
+    if (spacingDistance <= 0) {
+      alert('Spacing distance must be greater than 0.');
       return null;
     }
 
@@ -545,6 +556,8 @@ export default function MissionMap({
             <label className="block text-slate-400">Cruise Altitude (m)</label>
             <input
               type="number"
+              min="1"
+              step="1"
               value={cruiseAltitude}
               onChange={(e) => setCruiseAltitude(Number(e.target.value))}
               className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-100"
@@ -554,6 +567,8 @@ export default function MissionMap({
             <label className="block text-slate-400">Cruise Speed (m/s)</label>
             <input
               type="number"
+              min="0.1"
+              step="0.1"
               value={cruiseSpeed}
               onChange={(e) => setCruiseSpeed(Number(e.target.value))}
               className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-100"
@@ -563,6 +578,8 @@ export default function MissionMap({
             <label className="block text-slate-400">Spacing Distance (m)</label>
             <input
               type="number"
+              min="0.1"
+              step="0.1"
               value={spacingDistance}
               onChange={(e) => setSpacingDistance(Number(e.target.value))}
               className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-100"
