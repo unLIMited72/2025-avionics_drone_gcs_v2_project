@@ -53,8 +53,11 @@ class ROSConnection {
     this.ros.on('connection', () => {
       console.log('Connected to ROS bridge');
       this.notifyConnectionStatus(true);
-      this.subscribeTopic();
-      this.startConnectionCheck();
+
+      setTimeout(() => {
+        this.subscribeTopic();
+        this.startConnectionCheck();
+      }, 100);
     });
 
     this.ros.on('error', (error?: Error) => {
@@ -73,6 +76,8 @@ class ROSConnection {
   private subscribeTopic() {
     if (!this.ros) return;
 
+    console.log('Subscribing to /gcs/ui_status topic...');
+
     this.uiStatusTopic = new ROSLIB.Topic({
       ros: this.ros,
       name: '/gcs/ui_status',
@@ -80,6 +85,7 @@ class ROSConnection {
     });
 
     this.uiStatusTopic.subscribe((message: any) => {
+      console.log('Received message from /gcs/ui_status:', message);
       this.lastMessageTime = Date.now();
       const msg = message as any;
 
@@ -136,6 +142,7 @@ class ROSConnection {
         };
       });
 
+      console.log('Parsed drones:', drones);
       this.notifyStatusUpdate(drones);
     });
   }
