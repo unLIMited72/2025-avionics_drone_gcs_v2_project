@@ -38,6 +38,7 @@ class ROSConnection {
 
   connect(url: string) {
     this.disconnect();
+    this.isDisconnecting = false;
 
     if (typeof window !== 'undefined' && window.location.protocol === 'https:' && url.startsWith('ws://')) {
       url = url.replace('ws://', 'wss://');
@@ -52,6 +53,7 @@ class ROSConnection {
     this.ros.on('connection', () => {
       console.log('ROS bridge connected');
       this.connected = true;
+      console.log('[ROSConnection] State after connection - ros:', !!this.ros, 'connected:', this.connected);
       this.notifyConnectionStatus(true);
 
       setTimeout(() => {
@@ -191,26 +193,24 @@ class ROSConnection {
       this.uiStatusTopic = null;
     }
 
-    if (this.ros) {
+    const rosToClose = this.ros;
+    this.ros = null;
+    this.connected = false;
+    this.lastMessageTime = 0;
+    this.notifyConnectionStatus(false);
+
+    if (rosToClose) {
       try {
         console.log('Closing existing ROS connection...');
-        this.ros.close();
+        rosToClose.close();
       } catch (e) {
         console.warn('ROS close error:', e);
       }
-
-      setTimeout(() => {
-        this.ros = null;
-        this.connected = false;
-        this.isDisconnecting = false;
-      }, 500);
-    } else {
-      this.isDisconnecting = false;
     }
 
-    this.lastMessageTime = 0;
-    this.connected = false;
-    this.notifyConnectionStatus(false);
+    setTimeout(() => {
+      this.isDisconnecting = false;
+    }, 100);
   }
 
   onConnectionChange(callback: (connected: boolean) => void) {
