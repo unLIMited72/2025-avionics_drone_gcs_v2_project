@@ -38,10 +38,8 @@ class ROSConnection {
   connect(url: string) {
     this.disconnect();
 
-    // HTTPS 환경에서 자동으로 wss://로 변경
     if (typeof window !== 'undefined' && window.location.protocol === 'https:' && url.startsWith('ws://')) {
       url = url.replace('ws://', 'wss://');
-      console.log('Automatically upgraded to wss://');
     }
 
     console.log(`Connecting to ROS bridge at: ${url}`);
@@ -51,7 +49,7 @@ class ROSConnection {
     });
 
     this.ros.on('connection', () => {
-      console.log('Connected to ROS bridge');
+      console.log('ROS bridge connected');
       this.notifyConnectionStatus(true);
 
       setTimeout(() => {
@@ -67,7 +65,7 @@ class ROSConnection {
     });
 
     this.ros.on('close', () => {
-      console.log('Connection to ROS bridge closed');
+      console.log('ROS connection closed');
       this.notifyConnectionStatus(false);
       this.scheduleReconnect(url);
     });
@@ -76,8 +74,6 @@ class ROSConnection {
   private subscribeTopic() {
     if (!this.ros) return;
 
-    console.log('Subscribing to /gcs/ui_status topic...');
-
     this.uiStatusTopic = new ROSLIB.Topic({
       ros: this.ros,
       name: '/gcs/ui_status',
@@ -85,7 +81,6 @@ class ROSConnection {
     });
 
     this.uiStatusTopic.subscribe((message: any) => {
-      console.log('Received message from /gcs/ui_status:', message);
       this.lastMessageTime = Date.now();
       const msg = message as any;
 
@@ -142,7 +137,6 @@ class ROSConnection {
         };
       });
 
-      console.log('Parsed drones:', drones);
       this.notifyStatusUpdate(drones);
     });
   }

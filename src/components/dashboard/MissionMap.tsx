@@ -5,6 +5,7 @@ import { MapPin } from 'lucide-react';
 import ROSLIB from 'roslib';
 import DroneMarker from './DroneMarker';
 import { DroneStatus, rosConnection } from '../../services/rosConnection';
+import { MissionState } from '../DashboardScreen';
 
 interface Waypoint {
   id: number;
@@ -15,8 +16,10 @@ interface Waypoint {
 interface MissionMapProps {
   drones?: DroneStatus[];
   selectedIds?: Set<string>;
-  commandTrigger?: 'start' | 'pause' | 'emergency' | null;
-  onTriggerProcessed?: () => void;
+  missionState: MissionState;
+  onStartOrUpdate: () => void;
+  onPauseOrResume: () => void;
+  onEmergencyReturn: () => void;
 }
 
 type LandingMode = 'HOME' | 'LAST_WAYPOINT';
@@ -70,7 +73,6 @@ const createNumberedIcon = (number: number, isSelected: boolean) => {
   });
 };
 
-
 function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number) => void }) {
   useMapEvents({
     click: (e) => {
@@ -80,7 +82,14 @@ function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number
   return null;
 }
 
-export default function MissionMap({ drones = [], selectedIds = new Set(), commandTrigger, onTriggerProcessed }: MissionMapProps) {
+export default function MissionMap({
+  drones = [],
+  selectedIds = new Set(),
+  missionState,
+  onStartOrUpdate,
+  onPauseOrResume,
+  onEmergencyReturn,
+}: MissionMapProps) {
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
   const [selectedWaypoint, setSelectedWaypoint] = useState<number | null>(null);
   const mapRef = useRef<L.Map>(null);
@@ -92,14 +101,37 @@ export default function MissionMap({ drones = [], selectedIds = new Set(), comma
   const [cruiseSpeed, setCruiseSpeed] = useState<number>(5);
   const [spacingDistance, setSpacingDistance] = useState<number>(10);
   const [missionId, setMissionId] = useState<string>('');
-  const [missionStatus, setMissionStatus] = useState<string>('IDLE');
-  const [isPaused, setIsPaused] = useState<boolean>(false);
 
   const [ros, setRos] = useState<ROSLIB.Ros | null>(null);
+  const missionPlanTopicRef = useRef<ROSLIB.Topic | null>(null);
+  const missionCommandTopicRef = useRef<ROSLIB.Topic | null>(null);
 
   useEffect(() => {
     const updateRos = () => {
-      setRos(rosConnection.isConnected() ? rosConnection.getRos() : null);
+      const connected = rosConnection.isConnected();
+      const rosInstance = connected ? rosConnection.getRos() : null;
+      setRos(rosInstance);
+
+      if (connected && rosInstance) {
+        if (!missionPlanTopicRef.current) {
+          missionPlanTopicRef.current = new ROSLIB.Topic({
+            ros: rosInstance,
+            name: '/gcs/mission_plan_raw',
+            messageType: 'std_msgs/String',
+          });
+        }
+
+        if (!missionCommandTopicRef.current) {
+          missionCommandTopicRef.current = new ROSLIB.Topic({
+            ros: rosInstance,
+            name: '/gcs/mission_command_raw',
+            messageType: 'std_msgs/String',
+          });
+        }
+      } else {
+        missionPlanTopicRef.current = null;
+        missionCommandTopicRef.current = null;
+      }
     };
 
     updateRos();
@@ -110,26 +142,10 @@ export default function MissionMap({ drones = [], selectedIds = new Set(), comma
 
     return () => {
       unsubscribe();
+      missionPlanTopicRef.current = null;
+      missionCommandTopicRef.current = null;
     };
   }, []);
-
-  const missionPlanTopic = useMemo(() => {
-    if (!ros) return null;
-    return new ROSLIB.Topic({
-      ros,
-      name: '/gcs/mission_plan_raw',
-      messageType: 'std_msgs/String',
-    });
-  }, [ros]);
-
-  const missionCommandTopic = useMemo(() => {
-    if (!ros) return null;
-    return new ROSLIB.Topic({
-      ros,
-      name: '/gcs/mission_command_raw',
-      messageType: 'std_msgs/String',
-    });
-  }, [ros]);
 
   const dronesWithPosition = useMemo(
     () => drones.filter(d => d.latitude !== undefined && d.longitude !== undefined),
@@ -206,42 +222,32 @@ export default function MissionMap({ drones = [], selectedIds = new Set(), comma
   };
 
   const sendMissionCommand = (command: MissionCommandPayload['command']) => {
-    if (!missionCommandTopic) {
+    if (!ros || !missionCommandTopicRef.current) {
       alert('ROS not connected. Please check server connection.');
-      return;
+      return false;
     }
 
     if (!missionId) {
-      alert('No mission_id. Please press Start first.');
-      return;
+      alert('No mission_id. Please start a mission first.');
+      return false;
     }
 
     const payload: MissionCommandPayload = { mission_id: missionId, command };
 
     try {
       const msg = new ROSLIB.Message({ data: JSON.stringify(payload) });
-      missionCommandTopic.publish(msg);
-
-      if (command === 'START') {
-        setMissionStatus('STARTED');
-        setIsPaused(false);
-      } else if (command === 'PAUSE') {
-        setMissionStatus('PAUSED');
-        setIsPaused(true);
-      } else if (command === 'RESUME') {
-        setMissionStatus('RESUMED');
-        setIsPaused(false);
-      } else if (command === 'EMERGENCY_RETURN') {
-        setMissionStatus('EMERGENCY_RETURN_SENT');
-      }
+      missionCommandTopicRef.current.publish(msg);
+      console.log(`Mission command sent: ${command}`);
+      return true;
     } catch (err) {
       console.error('Failed to publish mission command:', err);
       alert('Failed to send mission command');
+      return false;
     }
   };
 
-  const handleStart = () => {
-    if (!missionPlanTopic || !missionCommandTopic) {
+  const handleStartOrUpdateClick = () => {
+    if (!ros || !missionPlanTopicRef.current || !missionCommandTopicRef.current) {
       alert('ROS not connected. Please check server connection.');
       return;
     }
@@ -253,43 +259,45 @@ export default function MissionMap({ drones = [], selectedIds = new Set(), comma
       const planMsg = new ROSLIB.Message({
         data: JSON.stringify(payload),
       });
-      missionPlanTopic.publish(planMsg);
-      setMissionStatus('PLAN_SENT');
+      missionPlanTopicRef.current.publish(planMsg);
+      console.log('Mission plan published:', payload);
 
-      const cmdMsg = new ROSLIB.Message({
-        data: JSON.stringify({
-          mission_id: payload.mission_id,
-          command: 'START',
-        }),
-      });
-      missionCommandTopic.publish(cmdMsg);
+      if (missionState === 'IDLE') {
+        const cmdMsg = new ROSLIB.Message({
+          data: JSON.stringify({
+            mission_id: payload.mission_id,
+            command: 'START',
+          }),
+        });
+        missionCommandTopicRef.current.publish(cmdMsg);
+        console.log('Mission START command sent');
+      } else {
+        console.log('Mission plan updated (no START command)');
+      }
 
-      setMissionStatus('STARTED');
-      setIsPaused(false);
+      onStartOrUpdate();
     } catch (err) {
-      console.error('Failed to start mission:', err);
-      alert('Failed to start mission');
+      console.error('Failed to send mission plan:', err);
+      alert('Failed to send mission plan');
     }
   };
 
-  const handlePauseResume = () => {
-    if (!missionId) {
-      alert('No mission to control.');
-      return;
-    }
-    if (isPaused) {
-      sendMissionCommand('RESUME');
-    } else {
-      sendMissionCommand('PAUSE');
+  const handlePauseResumeClick = () => {
+    if (missionState === 'ACTIVE') {
+      if (sendMissionCommand('PAUSE')) {
+        onPauseOrResume();
+      }
+    } else if (missionState === 'PAUSED') {
+      if (sendMissionCommand('RESUME')) {
+        onPauseOrResume();
+      }
     }
   };
 
-  const handleEmergencyReturn = () => {
-    if (!missionId) {
-      alert('No mission to control.');
-      return;
+  const handleEmergencyClick = () => {
+    if (sendMissionCommand('EMERGENCY_RETURN')) {
+      onEmergencyReturn();
     }
-    sendMissionCommand('EMERGENCY_RETURN');
   };
 
   const pathCoordinates = useMemo(
@@ -302,21 +310,53 @@ export default function MissionMap({ drones = [], selectedIds = new Set(), comma
     [waypoints, selectedWaypoint]
   );
 
-  useEffect(() => {
-    if (!commandTrigger) return;
-
-    if (commandTrigger === 'start') {
-      handleStart();
-    } else if (commandTrigger === 'pause') {
-      handlePauseResume();
-    } else if (commandTrigger === 'emergency') {
-      handleEmergencyReturn();
+  const getStartUpdateButtonConfig = () => {
+    if (missionState === 'IDLE') {
+      return {
+        label: 'Start Mission',
+        style: 'bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/20',
+        disabled: false,
+      };
+    } else if (missionState === 'ACTIVE' || missionState === 'PAUSED') {
+      return {
+        label: 'Update Mission',
+        style: 'bg-sky-500 hover:bg-sky-600 shadow-lg shadow-sky-500/20',
+        disabled: false,
+      };
+    } else {
+      return {
+        label: 'Start Mission',
+        style: 'bg-slate-700 text-slate-500 cursor-not-allowed',
+        disabled: true,
+      };
     }
+  };
 
-    if (onTriggerProcessed) {
-      onTriggerProcessed();
+  const getPauseResumeButtonConfig = () => {
+    if (missionState === 'ACTIVE') {
+      return {
+        label: 'Pause',
+        style: 'bg-amber-500 hover:bg-amber-600 shadow-lg shadow-amber-500/20',
+        visible: true,
+      };
+    } else if (missionState === 'PAUSED') {
+      return {
+        label: 'Resume',
+        style: 'bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/20',
+        visible: true,
+      };
+    } else {
+      return {
+        label: 'Pause',
+        style: '',
+        visible: false,
+      };
     }
-  }, [commandTrigger]);
+  };
+
+  const startUpdateBtn = getStartUpdateButtonConfig();
+  const pauseResumeBtn = getPauseResumeButtonConfig();
+  const emergencyEnabled = missionState === 'ACTIVE' || missionState === 'PAUSED';
 
   return (
     <div className="space-y-4">
@@ -467,9 +507,14 @@ export default function MissionMap({ drones = [], selectedIds = new Set(), comma
             </span>
           </div>
           <div>
-            <span className="text-slate-500 mr-1">Mission Status:</span>
-            <span className="text-sky-400 font-semibold">
-              {missionStatus}
+            <span className="text-slate-500 mr-1">Mission State:</span>
+            <span className={`font-semibold ${
+              missionState === 'ACTIVE' ? 'text-emerald-400' :
+              missionState === 'PAUSED' ? 'text-amber-400' :
+              missionState === 'EMERGENCY' ? 'text-red-400' :
+              'text-slate-400'
+            }`}>
+              {missionState}
             </span>
           </div>
         </div>
@@ -502,6 +547,40 @@ export default function MissionMap({ drones = [], selectedIds = new Set(), comma
               className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-100"
             />
           </div>
+        </div>
+      </div>
+
+      <div className="mt-3 p-3 bg-slate-900 rounded-lg border border-slate-700">
+        <h5 className="text-slate-300 text-sm font-medium mb-3">Mission Controls</h5>
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={handleStartOrUpdateClick}
+            disabled={startUpdateBtn.disabled}
+            className={`w-full px-6 py-3 text-white font-semibold rounded-lg transition-colors ${startUpdateBtn.style}`}
+          >
+            {startUpdateBtn.label}
+          </button>
+
+          {pauseResumeBtn.visible && (
+            <button
+              onClick={handlePauseResumeClick}
+              className={`w-full px-6 py-3 text-white font-semibold rounded-lg transition-colors ${pauseResumeBtn.style}`}
+            >
+              {pauseResumeBtn.label}
+            </button>
+          )}
+
+          <button
+            onClick={handleEmergencyClick}
+            disabled={!emergencyEnabled}
+            className={`w-full px-6 py-3 text-white font-semibold rounded-lg transition-colors ${
+              emergencyEnabled
+                ? 'bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/20'
+                : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+            }`}
+          >
+            Emergency Return
+          </button>
         </div>
       </div>
     </div>
