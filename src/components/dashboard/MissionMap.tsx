@@ -114,6 +114,7 @@ export default function MissionMap({
     const updateRos = () => {
       const connected = rosConnection.isConnected();
       const rosInstance = connected ? rosConnection.getRos() : null;
+      console.log('[MissionMap] updateRos - connected:', connected, 'rosInstance:', rosInstance);
       setRos(rosInstance);
 
       if (connected && rosInstance) {
@@ -123,6 +124,7 @@ export default function MissionMap({
             name: '/gcs/mission_plan_raw',
             messageType: 'std_msgs/String',
           });
+          console.log('[MissionMap] Created mission_plan_raw topic');
         }
 
         if (!missionCommandTopicRef.current) {
@@ -131,16 +133,19 @@ export default function MissionMap({
             name: '/gcs/mission_command_raw',
             messageType: 'std_msgs/String',
           });
+          console.log('[MissionMap] Created mission_command_raw topic');
         }
       } else {
         missionPlanTopicRef.current = null;
         missionCommandTopicRef.current = null;
+        console.log('[MissionMap] Cleared topic refs (not connected)');
       }
     };
 
     updateRos();
 
-    const unsubscribe = rosConnection.onConnectionChange(() => {
+    const unsubscribe = rosConnection.onConnectionChange((connected) => {
+      console.log('[MissionMap] Connection status changed:', connected);
       updateRos();
     });
 
@@ -249,7 +254,9 @@ export default function MissionMap({
   }, [ros, missionCommandTopicRef, missionId]);
 
   const handleStartOrUpdateClick = useCallback(() => {
+    console.log('[MissionMap] handleStartOrUpdateClick - ros:', ros, 'planTopic:', missionPlanTopicRef.current, 'cmdTopic:', missionCommandTopicRef.current);
     if (!ros || !missionPlanTopicRef.current || !missionCommandTopicRef.current) {
+      console.error('[MissionMap] ROS not connected or topics not initialized');
       alert('ROS not connected. Please check server connection.');
       return;
     }
