@@ -130,7 +130,8 @@ export default function MissionMap({
             name: '/gcs/mission_plan_raw',
             messageType: 'std_msgs/String',
           });
-          console.log('[MissionMap] Created mission_plan_raw topic');
+          missionPlanTopicRef.current.advertise();
+          console.log('[MissionMap] Created and advertised mission_plan_raw topic');
         }
 
         if (!missionCommandTopicRef.current) {
@@ -139,7 +140,8 @@ export default function MissionMap({
             name: '/gcs/mission_command_raw',
             messageType: 'std_msgs/String',
           });
-          console.log('[MissionMap] Created mission_command_raw topic');
+          missionCommandTopicRef.current.advertise();
+          console.log('[MissionMap] Created and advertised mission_command_raw topic');
         }
       } else {
         missionPlanTopicRef.current = null;
@@ -281,28 +283,39 @@ export default function MissionMap({
     setTimeout(() => setIsStartUpdatePressed(false), 300);
 
     try {
+      const payloadStr = JSON.stringify(payload);
+      console.log('[MissionMap] Publishing mission plan, payload string:', payloadStr);
+
       const planMsg = new ROSLIB.Message({
-        data: JSON.stringify(payload),
+        data: payloadStr,
       });
+
+      console.log('[MissionMap] planMsg object:', planMsg);
       missionPlanTopicRef.current.publish(planMsg);
-      console.log('Mission plan published:', payload);
+      console.log('[MissionMap] Mission plan published successfully');
 
       if (missionState === 'IDLE') {
+        const commandPayload = {
+          mission_id: payload.mission_id,
+          command: 'START',
+        };
+        const commandStr = JSON.stringify(commandPayload);
+        console.log('[MissionMap] Publishing START command, payload string:', commandStr);
+
         const cmdMsg = new ROSLIB.Message({
-          data: JSON.stringify({
-            mission_id: payload.mission_id,
-            command: 'START',
-          }),
+          data: commandStr,
         });
+
+        console.log('[MissionMap] cmdMsg object:', cmdMsg);
         missionCommandTopicRef.current.publish(cmdMsg);
-        console.log('Mission START command sent');
+        console.log('[MissionMap] Mission START command sent successfully');
       } else {
-        console.log('Mission plan updated (no START command)');
+        console.log('[MissionMap] Mission plan updated (no START command, state is not IDLE)');
       }
 
       onStartOrUpdate();
     } catch (err) {
-      console.error('Failed to send mission plan:', err);
+      console.error('[MissionMap] Failed to send mission plan:', err);
       alert('Failed to send mission plan');
       setIsStartUpdatePressed(false);
     }
