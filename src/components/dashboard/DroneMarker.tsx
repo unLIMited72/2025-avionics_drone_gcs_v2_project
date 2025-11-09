@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, memo } from 'react';
 import { Marker, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 import { DroneStatus } from '../../services/rosConnection';
@@ -90,7 +90,7 @@ const createDroneIcon = (id: string, headingDeg: number, isSelected: boolean) =>
   });
 };
 
-export default function DroneMarker({ drone, isSelected }: DroneMarkerProps) {
+function DroneMarker({ drone, isSelected }: DroneMarkerProps) {
   if (
     !isFinite(drone.latitude as number) ||
     !isFinite(drone.longitude as number)
@@ -121,3 +121,15 @@ export default function DroneMarker({ drone, isSelected }: DroneMarkerProps) {
     </Marker>
   );
 }
+
+export default memo(DroneMarker, (prev, next) => {
+  return (
+    prev.drone.id === next.drone.id &&
+    prev.drone.latitude === next.drone.latitude &&
+    prev.drone.longitude === next.drone.longitude &&
+    prev.drone.headingDeg === next.drone.headingDeg &&
+    prev.drone.battery === next.drone.battery &&
+    prev.drone.status === next.drone.status &&
+    prev.isSelected === next.isSelected
+  );
+});

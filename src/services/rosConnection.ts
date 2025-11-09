@@ -71,6 +71,30 @@ class ROSConnection {
     });
   }
 
+  private decodeBase64ToUint8Array(base64: string): number[] {
+    try {
+      const binaryString = atob(base64);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      return Array.from(bytes);
+    } catch (e) {
+      console.error('Base64 decoding error:', e);
+      return [];
+    }
+  }
+
+  private parseStatusArray(statusInFlights: any): number[] {
+    if (typeof statusInFlights === 'string') {
+      return this.decodeBase64ToUint8Array(statusInFlights);
+    } else if (Array.isArray(statusInFlights)) {
+      return statusInFlights;
+    }
+    console.error('Unexpected status_in_flights format:', statusInFlights);
+    return [];
+  }
+
   private subscribeTopic() {
     if (!this.ros) return;
 
@@ -84,31 +108,7 @@ class ROSConnection {
       this.lastMessageTime = Date.now();
       const msg = message as any;
 
-      // Base64 디코딩 함수
-      const decodeBase64ToUint8Array = (base64: string): number[] => {
-        try {
-          const binaryString = atob(base64);
-          const bytes = new Uint8Array(binaryString.length);
-          for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-          }
-          return Array.from(bytes);
-        } catch (e) {
-          console.error('Base64 decoding error:', e);
-          return [];
-        }
-      };
-
-      // status_in_flights가 Base64 문자열인 경우 디코딩
-      let statusArray: number[];
-      if (typeof msg.status_in_flights === 'string') {
-        statusArray = decodeBase64ToUint8Array(msg.status_in_flights);
-      } else if (Array.isArray(msg.status_in_flights)) {
-        statusArray = msg.status_in_flights;
-      } else {
-        statusArray = [];
-        console.error('Unexpected status_in_flights format:', msg.status_in_flights);
-      }
+      const statusArray = this.parseStatusArray(msg.status_in_flights);
 
       const statusMap: { [key: number]: 'Normal' | 'Warning' | 'Danger' } = {
         0: 'Normal',
@@ -146,15 +146,12 @@ class ROSConnection {
       clearInterval(this.connectionCheckInterval);
     }
 
-    // 타임아웃을 10초로 증가하여 순간적인 지연에 강건하게 대응
     this.connectionCheckInterval = setInterval(() => {
       const now = Date.now();
       if (this.lastMessageTime > 0 && now - this.lastMessageTime > 10000) {
-        // 빈 배열 대신 마지막 상태를 유지하되 connected: false로 표시하도록 개선 가능
-        // 현재는 요구사항에 따라 타임아웃만 증가
         this.notifyStatusUpdate([]);
       }
-    }, 1000);
+    }, 2000);
   }
 
   private scheduleReconnect(url: string) {

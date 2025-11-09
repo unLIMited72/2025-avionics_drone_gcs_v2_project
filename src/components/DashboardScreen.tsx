@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { X } from 'lucide-react';
 import DroneStatusBar from './dashboard/DroneStatusBar';
 import MissionMap from './dashboard/MissionMap';
@@ -51,7 +51,7 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
   }, []);
 
 
-  const handleSelectDrone = (droneId: string) => {
+  const handleSelectDrone = useCallback((droneId: string) => {
     setSelectedDrones(prev => {
       const newSet = new Set(prev);
       if (newSet.has(droneId)) {
@@ -68,12 +68,12 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
 
       return newSet;
     });
-  };
+  }, [flightMode]);
 
-  const handleDisconnectAll = () => {
+  const handleDisconnectAll = useCallback(() => {
     rosConnection.disconnect();
     onDisconnect();
-  };
+  }, [onDisconnect]);
 
   const canUseMission = selectedDrones.size >= 1;
   const canUseGyro = selectedDrones.size === 1;

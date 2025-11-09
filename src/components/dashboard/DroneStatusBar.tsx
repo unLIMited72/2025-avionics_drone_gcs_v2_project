@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Battery, Link, CheckCircle, XCircle, Shield, ShieldOff, AlertTriangle, AlertCircle } from 'lucide-react';
 
 type FlightStatus = 'Normal' | 'Warning' | 'Danger';
@@ -13,7 +14,13 @@ interface DroneStatusBarProps {
   onSelect: () => void;
 }
 
-export default function DroneStatusBar({
+const getBatteryColor = (level: number) => {
+  if (level > 50) return 'text-emerald-500';
+  if (level > 20) return 'text-yellow-500';
+  return 'text-red-500';
+};
+
+function DroneStatusBar({
   droneId,
   isConnected,
   isFlightReady,
@@ -23,11 +30,6 @@ export default function DroneStatusBar({
   isSelected,
   onSelect,
 }: DroneStatusBarProps) {
-  const getBatteryColor = (level: number) => {
-    if (level > 50) return 'text-emerald-500';
-    if (level > 20) return 'text-yellow-500';
-    return 'text-red-500';
-  };
 
   return (
     <div className={`bg-slate-900 border rounded-lg p-3 transition-colors ${
@@ -116,3 +118,5 @@ export default function DroneStatusBar({
     </div>
   );
 }
+
+export default memo(DroneStatusBar);

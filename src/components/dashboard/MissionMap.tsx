@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useEffect } from 'react';
+import { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { MapPin } from 'lucide-react';
@@ -162,29 +162,27 @@ export default function MissionMap({
     }
   }, [dronesWithPosition]);
 
-  const handleMapClick = (lat: number, lng: number) => {
+  const handleMapClick = useCallback((lat: number, lng: number) => {
     const newWaypoint: Waypoint = {
       id: Date.now(),
       lat,
       lng,
     };
 
-    setWaypoints([...waypoints, newWaypoint]);
-  };
+    setWaypoints(prev => [...prev, newWaypoint]);
+  }, []);
 
-  const handleRemoveWaypoint = (id: number) => {
-    setWaypoints(waypoints.filter(wp => wp.id !== id));
-    if (selectedWaypoint === id) {
-      setSelectedWaypoint(null);
-    }
-  };
+  const handleRemoveWaypoint = useCallback((id: number) => {
+    setWaypoints(prev => prev.filter(wp => wp.id !== id));
+    setSelectedWaypoint(prev => prev === id ? null : prev);
+  }, []);
 
-  const handleClearAll = () => {
+  const handleClearAll = useCallback(() => {
     setWaypoints([]);
     setSelectedWaypoint(null);
-  };
+  }, []);
 
-  const buildMissionPlanPayload = (): MissionPlanPayload | null => {
+  const buildMissionPlanPayload = useCallback((): MissionPlanPayload | null => {
     const drone_ids = Array.from(selectedIds || []).filter(Boolean);
 
     if (drone_ids.length === 0) {
@@ -219,9 +217,9 @@ export default function MissionMap({
         heading_to_next_wp: true,
       },
     };
-  };
+  }, [waypoints, selectedIds, missionId, cruiseAltitude, cruiseSpeed, landingMode, spacingDistance]);
 
-  const sendMissionCommand = (command: MissionCommandPayload['command']) => {
+  const sendMissionCommand = useCallback((command: MissionCommandPayload['command']) => {
     if (!ros || !missionCommandTopicRef.current) {
       alert('ROS not connected. Please check server connection.');
       return false;
@@ -244,9 +242,9 @@ export default function MissionMap({
       alert('Failed to send mission command');
       return false;
     }
-  };
+  }, [ros, missionCommandTopicRef, missionId]);
 
-  const handleStartOrUpdateClick = () => {
+  const handleStartOrUpdateClick = useCallback(() => {
     if (!ros || !missionPlanTopicRef.current || !missionCommandTopicRef.current) {
       alert('ROS not connected. Please check server connection.');
       return;
@@ -280,9 +278,9 @@ export default function MissionMap({
       console.error('Failed to send mission plan:', err);
       alert('Failed to send mission plan');
     }
-  };
+  }, [ros, missionPlanTopicRef, missionCommandTopicRef, buildMissionPlanPayload, missionState, onStartOrUpdate]);
 
-  const handlePauseResumeClick = () => {
+  const handlePauseResumeClick = useCallback(() => {
     if (missionState === 'ACTIVE') {
       if (sendMissionCommand('PAUSE')) {
         onPauseOrResume();
@@ -292,13 +290,13 @@ export default function MissionMap({
         onPauseOrResume();
       }
     }
-  };
+  }, [missionState, sendMissionCommand, onPauseOrResume]);
 
-  const handleEmergencyClick = () => {
+  const handleEmergencyClick = useCallback(() => {
     if (sendMissionCommand('EMERGENCY_RETURN')) {
       onEmergencyReturn();
     }
-  };
+  }, [sendMissionCommand, onEmergencyReturn]);
 
   const pathCoordinates = useMemo(
     () => waypoints.map(wp => [wp.lat, wp.lng] as [number, number]),

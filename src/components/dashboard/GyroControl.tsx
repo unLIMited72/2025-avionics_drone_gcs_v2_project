@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Smartphone } from 'lucide-react';
 
 interface DroneControl {
@@ -60,11 +60,11 @@ export default function GyroControl() {
     };
   }, [manualYaw, isHoldMode]);
 
-  const handleYawChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleYawChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newYaw = parseFloat(e.target.value);
     setManualYaw(newYaw);
     setDroneControl(prev => ({ ...prev, yaw: newYaw }));
-  };
+  }, []);
 
   const requestPermission = async () => {
     if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
