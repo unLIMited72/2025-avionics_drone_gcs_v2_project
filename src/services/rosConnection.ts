@@ -234,6 +234,10 @@ class ROSConnection {
   isConnected(): boolean {
     return this.ros !== null && this.ros.isConnected;
   }
+
+  getRos(): ROSLIB.Ros | null {
+    return this.ros;
+  }
 }
 
 export const rosConnection = new ROSConnection();

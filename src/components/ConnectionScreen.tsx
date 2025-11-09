@@ -6,7 +6,7 @@ interface ConnectionScreenProps {
   onConnect: () => void;
 }
 
-const ROS_BRIDGE_URL = 'wss://px4gcsserver.ngrok.app';
+const ROS_BRIDGE_URL = 'wss://px4gcsserver.ngrok.app:9090';
 
 export default function ConnectionScreen({ onConnect }: ConnectionScreenProps) {
   const [password, setPassword] = useState('');

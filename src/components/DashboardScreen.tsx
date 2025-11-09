@@ -13,8 +13,7 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
   const [drones, setDrones] = useState<DroneStatus[]>([]);
   const [selectedDrones, setSelectedDrones] = useState<Set<string>>(new Set());
   const [flightMode, setFlightMode] = useState<'mission' | 'gyro' | null>(null);
-  const [targetAltitude, setTargetAltitude] = useState<number>(10);
-  const [targetSpeed, setTargetSpeed] = useState<number>(5);
+  const [missionTrigger, setMissionTrigger] = useState<'start' | 'pause' | 'emergency' | null>(null);
 
   useEffect(() => {
     const unsubscribe = rosConnection.onStatusUpdate((updatedDrones) => {
@@ -170,7 +169,12 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
 
           {flightMode === 'mission' && canUseMission && (
             <div className="mt-4">
-              <MissionMap drones={drones} selectedIds={selectedDrones} />
+              <MissionMap
+                drones={drones}
+                selectedIds={selectedDrones}
+                commandTrigger={missionTrigger}
+                onTriggerProcessed={() => setMissionTrigger(null)}
+              />
             </div>
           )}
 
@@ -186,13 +190,22 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
 
           {flightMode === 'mission' && canUseMission && (
             <div className="flex flex-col gap-3">
-              <button className="w-full px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-lg transition-colors shadow-lg shadow-emerald-500/20">
+              <button
+                onClick={() => setMissionTrigger('start')}
+                className="w-full px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-lg transition-colors shadow-lg shadow-emerald-500/20"
+              >
                 Start
               </button>
-              <button className="w-full px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-lg transition-colors shadow-lg shadow-amber-500/20">
+              <button
+                onClick={() => setMissionTrigger('pause')}
+                className="w-full px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-lg transition-colors shadow-lg shadow-amber-500/20"
+              >
                 Pause
               </button>
-              <button className="w-full px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors shadow-lg shadow-red-500/20">
+              <button
+                onClick={() => setMissionTrigger('emergency')}
+                className="w-full px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors shadow-lg shadow-red-500/20"
+              >
                 Emergency Return
               </button>
             </div>
