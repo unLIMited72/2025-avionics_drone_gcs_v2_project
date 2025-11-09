@@ -201,6 +201,7 @@ class ROSConnection {
 
       setTimeout(() => {
         this.ros = null;
+        this.connected = false;
         this.isDisconnecting = false;
       }, 500);
     } else {
@@ -235,7 +236,7 @@ class ROSConnection {
   }
 
   isConnected(): boolean {
-    return this.connected;
+    return !!this.ros && this.connected;
   }
 
   getRos(): ROSLIB.Ros | null {
