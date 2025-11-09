@@ -185,29 +185,29 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
           <h3 className="text-white font-semibold mb-3">Flight Commands</h3>
 
           {flightMode === 'mission' && canUseMission && (
-            <div className="flex gap-3">
-              <button className="flex-1 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-lg transition-colors shadow-lg shadow-emerald-500/20">
+            <div className="flex flex-col gap-3">
+              <button className="w-full px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-lg transition-colors shadow-lg shadow-emerald-500/20">
                 Start
               </button>
-              <button className="flex-1 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-lg transition-colors shadow-lg shadow-amber-500/20">
+              <button className="w-full px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-lg transition-colors shadow-lg shadow-amber-500/20">
                 Pause
               </button>
-              <button className="flex-1 px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors shadow-lg shadow-red-500/20">
-                Emergency
+              <button className="w-full px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors shadow-lg shadow-red-500/20">
+                Emergency Return
               </button>
             </div>
           )}
 
           {flightMode === 'gyro' && canUseGyro && (
-            <div className="flex gap-3">
-              <button className="flex-1 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-lg transition-colors shadow-lg shadow-emerald-500/20">
+            <div className="flex flex-col gap-3">
+              <button className="w-full px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-lg transition-colors shadow-lg shadow-emerald-500/20">
                 Start
               </button>
-              <button className="flex-1 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-lg transition-colors shadow-lg shadow-amber-500/20">
+              <button className="w-full px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-lg transition-colors shadow-lg shadow-amber-500/20">
                 Pause
               </button>
-              <button className="flex-1 px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors shadow-lg shadow-red-500/20">
-                Emergency
+              <button className="w-full px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors shadow-lg shadow-red-500/20">
+                Emergency Return
               </button>
             </div>
           )}

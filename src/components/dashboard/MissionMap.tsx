@@ -460,31 +460,6 @@ export default function MissionMap({ drones = [], selectedIds = new Set() }: Mis
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2 text-xs">
-          <button
-            type="button"
-            onClick={handleStart}
-            className="px-3 py-1 bg-sky-600 hover:bg-sky-500 text-white rounded transition-colors"
-          >
-            Start
-          </button>
-          <button
-            type="button"
-            onClick={handlePauseResume}
-            disabled={!missionId || missionStatus === 'IDLE'}
-            className="px-3 py-1 bg-amber-600 hover:bg-amber-500 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded transition-colors"
-          >
-            {isPaused ? 'Resume' : 'Pause'}
-          </button>
-          <button
-            type="button"
-            onClick={handleEmergencyReturn}
-            disabled={!missionId}
-            className="px-3 py-1 bg-red-600 hover:bg-red-500 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded transition-colors"
-          >
-            Emergency Return
-          </button>
-        </div>
       </div>
     </div>
   );
