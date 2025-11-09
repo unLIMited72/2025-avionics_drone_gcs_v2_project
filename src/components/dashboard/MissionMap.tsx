@@ -214,6 +214,8 @@ export default function MissionMap({
         seq: idx,
         lat: wp.lat,
         lon: wp.lng,
+        alt: cruiseAltitude,
+        hold_time: 0.0,
       })),
       cruise_altitude_m: cruiseAltitude,
       cruise_speed_mps: cruiseSpeed,
