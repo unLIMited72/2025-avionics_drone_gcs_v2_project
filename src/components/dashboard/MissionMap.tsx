@@ -102,6 +102,10 @@ export default function MissionMap({
   const [spacingDistance, setSpacingDistance] = useState<number>(10);
   const [missionId, setMissionId] = useState<string>('');
 
+  const [isStartUpdatePressed, setIsStartUpdatePressed] = useState(false);
+  const [isPauseResumePressed, setIsPauseResumePressed] = useState(false);
+  const [isEmergencyPressed, setIsEmergencyPressed] = useState(false);
+
   const [ros, setRos] = useState<ROSLIB.Ros | null>(null);
   const missionPlanTopicRef = useRef<ROSLIB.Topic | null>(null);
   const missionCommandTopicRef = useRef<ROSLIB.Topic | null>(null);
@@ -253,6 +257,9 @@ export default function MissionMap({
     const payload = buildMissionPlanPayload();
     if (!payload) return;
 
+    setIsStartUpdatePressed(true);
+    setTimeout(() => setIsStartUpdatePressed(false), 300);
+
     try {
       const planMsg = new ROSLIB.Message({
         data: JSON.stringify(payload),
@@ -277,10 +284,14 @@ export default function MissionMap({
     } catch (err) {
       console.error('Failed to send mission plan:', err);
       alert('Failed to send mission plan');
+      setIsStartUpdatePressed(false);
     }
   }, [ros, missionPlanTopicRef, missionCommandTopicRef, buildMissionPlanPayload, missionState, onStartOrUpdate]);
 
   const handlePauseResumeClick = useCallback(() => {
+    setIsPauseResumePressed(true);
+    setTimeout(() => setIsPauseResumePressed(false), 300);
+
     if (missionState === 'ACTIVE') {
       if (sendMissionCommand('PAUSE')) {
         onPauseOrResume();
@@ -293,6 +304,9 @@ export default function MissionMap({
   }, [missionState, sendMissionCommand, onPauseOrResume]);
 
   const handleEmergencyClick = useCallback(() => {
+    setIsEmergencyPressed(true);
+    setTimeout(() => setIsEmergencyPressed(false), 300);
+
     if (sendMissionCommand('EMERGENCY_RETURN')) {
       onEmergencyReturn();
     }
@@ -554,7 +568,9 @@ export default function MissionMap({
           <button
             onClick={handleStartOrUpdateClick}
             disabled={startUpdateBtn.disabled}
-            className={`w-full px-6 py-3 text-white font-semibold rounded-lg transition-colors ${startUpdateBtn.style}`}
+            className={`w-full px-6 py-3 text-white font-semibold rounded-lg transition-all duration-150 ${startUpdateBtn.style} ${
+              isStartUpdatePressed ? 'scale-95 brightness-90' : 'active:scale-95'
+            }`}
           >
             {startUpdateBtn.label}
           </button>
@@ -562,7 +578,9 @@ export default function MissionMap({
           {pauseResumeBtn.visible && (
             <button
               onClick={handlePauseResumeClick}
-              className={`w-full px-6 py-3 text-white font-semibold rounded-lg transition-colors ${pauseResumeBtn.style}`}
+              className={`w-full px-6 py-3 text-white font-semibold rounded-lg transition-all duration-150 ${pauseResumeBtn.style} ${
+                isPauseResumePressed ? 'scale-95 brightness-90' : 'active:scale-95'
+              }`}
             >
               {pauseResumeBtn.label}
             </button>
@@ -571,10 +589,12 @@ export default function MissionMap({
           <button
             onClick={handleEmergencyClick}
             disabled={!emergencyEnabled}
-            className={`w-full px-6 py-3 text-white font-semibold rounded-lg transition-colors ${
+            className={`w-full px-6 py-3 text-white font-semibold rounded-lg transition-all duration-150 ${
               emergencyEnabled
                 ? 'bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/20'
                 : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+            } ${
+              isEmergencyPressed ? 'scale-95 brightness-90' : 'active:scale-95'
             }`}
           >
             Emergency Return
