@@ -181,94 +181,34 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
           )}
         </div>
 
-        {flightMode === 'mission' && canUseMission && (
-          <div className="mt-4 p-4 bg-slate-800 rounded-lg border border-slate-700">
-            <h3 className="text-white font-semibold mb-3">Flight Parameters</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm text-slate-400 mb-2">Target Altitude (m)</label>
-                <input
-                  type="text"
-                  value={targetAltitude}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === '' || !isNaN(Number(val))) {
-                      setTargetAltitude(val === '' ? 0 : Number(val));
-                    }
-                  }}
-                  placeholder="0"
-                  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-sky-500 transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-slate-400 mb-2">Target Speed (m/s)</label>
-                <input
-                  type="text"
-                  value={targetSpeed}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === '' || !isNaN(Number(val))) {
-                      setTargetSpeed(val === '' ? 0 : Number(val));
-                    }
-                  }}
-                  placeholder="0"
-                  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-sky-500 transition-colors"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {flightMode === 'gyro' && canUseGyro && (
-          <div className="mt-4 p-4 bg-slate-800 rounded-lg border border-slate-700">
-            <h3 className="text-white font-semibold mb-3">Flight Parameters</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm text-slate-400 mb-2">Target Altitude (m)</label>
-                <input
-                  type="text"
-                  value={targetAltitude}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === '' || !isNaN(Number(val))) {
-                      setTargetAltitude(val === '' ? 0 : Number(val));
-                    }
-                  }}
-                  placeholder="0"
-                  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-sky-500 transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-slate-400 mb-2">Max Speed (m/s)</label>
-                <input
-                  type="text"
-                  value={targetSpeed}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === '' || !isNaN(Number(val))) {
-                      setTargetSpeed(val === '' ? 0 : Number(val));
-                    }
-                  }}
-                  placeholder="0"
-                  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-sky-500 transition-colors"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
         <div className="mt-4 p-4 bg-slate-800 rounded-lg border border-slate-700">
           <h3 className="text-white font-semibold mb-3">Flight Commands</h3>
 
           {flightMode === 'mission' && canUseMission && (
-            <div className="text-center text-slate-400 py-3">
-              Mission commands will be implemented
+            <div className="flex gap-3">
+              <button className="flex-1 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-lg transition-colors shadow-lg shadow-emerald-500/20">
+                Start
+              </button>
+              <button className="flex-1 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-lg transition-colors shadow-lg shadow-amber-500/20">
+                Pause
+              </button>
+              <button className="flex-1 px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors shadow-lg shadow-red-500/20">
+                Emergency
+              </button>
             </div>
           )}
 
           {flightMode === 'gyro' && canUseGyro && (
-            <div className="text-center text-slate-400 py-3">
-              Gyro flight commands will be implemented
+            <div className="flex gap-3">
+              <button className="flex-1 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-lg transition-colors shadow-lg shadow-emerald-500/20">
+                Start
+              </button>
+              <button className="flex-1 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-lg transition-colors shadow-lg shadow-amber-500/20">
+                Pause
+              </button>
+              <button className="flex-1 px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors shadow-lg shadow-red-500/20">
+                Emergency
+              </button>
             </div>
           )}
 
