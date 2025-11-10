@@ -339,44 +339,47 @@ export default function GyroControl({
       </div>
 
       <div className="p-3 bg-slate-900 rounded-lg border border-slate-700 flex flex-col gap-3">
-        <div className="flex items-center gap-3 text-xs">
-          <div className="flex-1">
-            <label className="block text-slate-400 mb-1">
-              Target Altitude (m)
-            </label>
-            <input
-              type="number"
-              min={1}
-              step={1}
-              value={targetAlt}
-              onChange={(e) => setTargetAlt(Number(e.target.value))}
-              className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-100"
-            />
+        {!isActive && (
+          <div className="flex items-center gap-3 text-xs">
+            <div className="flex-1">
+              <label className="block text-slate-400 mb-1">
+                Target Altitude (m)
+              </label>
+              <input
+                type="number"
+                min={1}
+                step={1}
+                value={targetAlt}
+                onChange={(e) => setTargetAlt(Number(e.target.value))}
+                disabled={missionState !== 'IDLE'}
+                className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              />
+            </div>
           </div>
-        </div>
+        )}
 
-        <div className="flex gap-3">
+        {!isActive ? (
           <button
             onClick={handleTakeoff}
             disabled={missionState !== 'IDLE'}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-colors
-              ${missionState === 'IDLE'
-                ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
-                : 'bg-slate-800 text-slate-500 cursor-not-allowed'}
-            `}
+            className={`w-full flex items-center justify-center gap-2 px-6 py-3 font-semibold rounded-lg transition-all duration-150 ${
+              missionState === 'IDLE'
+                ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/40 active:scale-95'
+                : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+            }`}
           >
-            <PlaneTakeoff className="w-4 h-4" />
+            <PlaneTakeoff className="w-5 h-5" />
             Takeoff
           </button>
-
+        ) : (
           <button
             onClick={handleLand}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-colors bg-red-500 hover:bg-red-600 text-white"
+            className="w-full flex items-center justify-center gap-2 px-6 py-3 font-semibold rounded-lg transition-all duration-150 bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/40 active:scale-95"
           >
-            <PlaneLanding className="w-4 h-4" />
+            <PlaneLanding className="w-5 h-5" />
             Land
           </button>
-        </div>
+        )}
 
         <p className="text-[10px] text-slate-500">
           Gyro Flight is available only for single drone when mission is IDLE.
