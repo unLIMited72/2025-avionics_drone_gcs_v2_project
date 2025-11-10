@@ -362,7 +362,7 @@ export default function MissionMap({
   }, [sendMissionCommand]);
 
   useEffect(() => {
-    if (missionState === 'IDLE' && waypoints.length > 0) {
+    if (missionState === 'IDLE') {
       setWaypoints([]);
       setSelectedWaypoint(null);
       setMissionId('');
@@ -377,7 +377,7 @@ export default function MissionMap({
 
   const pathCoordinates = useMemo(
     () => waypoints.map(wp => [wp.lat, wp.lng] as [number, number]),
-    [waypoints]
+    [waypoints, missionState]
   );
 
   const getPathStyle = () => {
@@ -529,6 +529,7 @@ export default function MissionMap({
 
           {pathCoordinates.length > 1 && (
             <Polyline
+              key={`path-${missionState}`}
               positions={pathCoordinates}
               {...getPathStyle()}
             />

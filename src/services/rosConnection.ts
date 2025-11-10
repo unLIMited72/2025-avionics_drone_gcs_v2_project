@@ -169,7 +169,8 @@ class ROSConnection {
       this.notifyMissionStatusUpdate(status);
 
       if (status.state === MissionStateEnum.STATE_COMPLETED ||
-          status.state === MissionStateEnum.STATE_ABORTED) {
+          status.state === MissionStateEnum.STATE_ABORTED ||
+          status.state === MissionStateEnum.STATE_IDLE) {
         this.clearDroneTrails();
       }
     });
