@@ -9,7 +9,6 @@ interface ConnectionScreenProps {
 const ROS_BRIDGE_URL = 'wss://px4gcsserver.ngrok.app';
 
 export default function ConnectionScreen({ onConnect }: ConnectionScreenProps) {
-  const [password, setPassword] = useState('');
   const [serverConnected, setServerConnected] = useState(false);
   const [availableDrones, setAvailableDrones] = useState(0);
   const [isConnecting, setIsConnecting] = useState(true);
@@ -37,9 +36,8 @@ export default function ConnectionScreen({ onConnect }: ConnectionScreenProps) {
     };
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password.trim() && serverConnected) {
+  const handleConnect = () => {
+    if (serverConnected) {
       onConnect();
     }
   };
@@ -87,30 +85,13 @@ export default function ConnectionScreen({ onConnect }: ConnectionScreenProps) {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <label htmlFor="password" className="block text-sm font-medium text-slate-300">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-              disabled={!serverConnected}
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={!password.trim() || !serverConnected}
-            className="w-full px-6 py-3 bg-sky-500 hover:bg-sky-600 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-900"
-          >
-            Connect
-          </button>
-        </form>
+        <button
+          onClick={handleConnect}
+          disabled={!serverConnected}
+          className="w-full px-6 py-3 bg-sky-500 hover:bg-sky-600 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-900"
+        >
+          Connect
+        </button>
 
         <div className="text-center text-xs text-slate-500">
           v1.0.0
