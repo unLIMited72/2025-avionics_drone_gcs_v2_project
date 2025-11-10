@@ -176,8 +176,8 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
           </div>
         )}
 
-        <div className="mt-6 p-4 bg-slate-800 rounded-lg border border-slate-700">
-          <h3 className="text-white font-semibold mb-3">Flight Control Mode</h3>
+        <div className="mt-6 p-3 bg-slate-800 rounded-lg border border-slate-700">
+          <h3 className="text-white font-semibold text-sm mb-3">Flight Control Mode</h3>
           <div className="flex gap-3">
             <button
               onClick={() => {
@@ -186,7 +186,7 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
                 }
               }}
               disabled={!canUseMission}
-              className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all ${
+              className={`flex-1 px-4 py-2 text-sm rounded-lg font-semibold transition-all ${
                 flightMode === 'mission'
                   ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/50'
                   : canUseMission
@@ -215,7 +215,7 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
                 }
               }}
               disabled={!canUseGyro}
-              className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all ${
+              className={`flex-1 px-4 py-2 text-sm rounded-lg font-semibold transition-all ${
                 flightMode === 'gyro'
                   ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/50'
                   : canUseGyro

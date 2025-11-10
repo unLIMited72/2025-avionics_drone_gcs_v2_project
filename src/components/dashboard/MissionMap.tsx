@@ -449,53 +449,51 @@ export default function MissionMap({
   const emergencyEnabled = missionState === 'ACTIVE' || missionState === 'PAUSED';
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h4 className="text-slate-300 font-medium">Mission Map</h4>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h4 className="text-slate-300 font-medium text-sm">Mission Map</h4>
         <div className="flex items-center gap-2">
           <span className="text-xs text-slate-400">
             {dronesWithPosition.length} drone{dronesWithPosition.length !== 1 ? 's' : ''}
           </span>
-          <span className="text-slate-600">|</span>
           <button
             onClick={handleClearAll}
             disabled={waypoints.length === 0}
-            className="px-3 py-1 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:text-slate-600 text-slate-300 text-xs rounded transition-colors"
+            className="px-2 py-1 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:text-slate-600 text-slate-300 text-xs rounded transition-colors"
           >
-            Clear All
+            Clear
           </button>
           <span className="text-xs text-slate-400">
-            {waypoints.length} waypoint{waypoints.length !== 1 ? 's' : ''}
+            {waypoints.length} WP
           </span>
-          <span className="text-slate-600">|</span>
-          <div className="inline-flex bg-slate-800 rounded-lg p-1 text-[10px]">
-            <button
-              type="button"
-              onClick={() => setLandingMode('HOME')}
-              className={`px-2 py-1 rounded-md transition-colors ${
-                landingMode === 'HOME'
-                  ? 'bg-sky-500 text-white'
-                  : 'text-slate-400 hover:text-sky-400'
-              }`}
-            >
-              Landing: HOME
-            </button>
-            <button
-              type="button"
-              onClick={() => setLandingMode('LAST_WAYPOINT')}
-              className={`px-2 py-1 rounded-md transition-colors ${
-                landingMode === 'LAST_WAYPOINT'
-                  ? 'bg-sky-500 text-white'
-                  : 'text-slate-400 hover:text-sky-400'
-              }`}
-            >
-              Landing: LAST-POINT
-            </button>
-          </div>
         </div>
       </div>
+      <div className="inline-flex bg-slate-800 rounded-lg p-1 text-[10px] w-full">
+        <button
+          type="button"
+          onClick={() => setLandingMode('HOME')}
+          className={`flex-1 px-2 py-1 rounded-md transition-colors ${
+            landingMode === 'HOME'
+              ? 'bg-sky-500 text-white'
+              : 'text-slate-400 hover:text-sky-400'
+          }`}
+        >
+          Landing: HOME
+        </button>
+        <button
+          type="button"
+          onClick={() => setLandingMode('LAST_WAYPOINT')}
+          className={`flex-1 px-2 py-1 rounded-md transition-colors ${
+            landingMode === 'LAST_WAYPOINT'
+              ? 'bg-sky-500 text-white'
+              : 'text-slate-400 hover:text-sky-400'
+          }`}
+        >
+          Landing: LAST-POINT
+        </button>
+      </div>
 
-      <div className="relative w-full h-96 rounded-lg border-2 border-slate-700 overflow-hidden">
+      <div className="relative w-full h-64 rounded-lg border-2 border-slate-700 overflow-hidden">
         <MapContainer
           center={initialCenter}
           zoom={17}
@@ -592,25 +590,25 @@ export default function MissionMap({
         </div>
       )}
 
-      <div className="mt-3 p-3 bg-slate-900 rounded-lg border border-slate-700 flex flex-col gap-3">
+      <div className="mt-2 p-2 bg-slate-900 rounded-lg border border-slate-700 flex flex-col gap-2">
         <div className="flex items-center justify-between text-xs text-slate-400">
           <div>
             <span className="mr-3">
-              Selected Drones:{' '}
+              Drones:{' '}
               <span className="text-sky-400 font-semibold">
                 {selectedIds.size}
               </span>
             </span>
             <span>
-              Waypoints:{' '}
+              WP:{' '}
               <span className="text-emerald-400 font-semibold">
                 {waypoints.length}
               </span>
             </span>
           </div>
           <div>
-            <span className="text-slate-500 mr-1">Mission State:</span>
-            <span className={`font-semibold ${
+            <span className="text-slate-500 mr-1 text-[10px]">State:</span>
+            <span className={`font-semibold text-[10px] ${
               missionState === 'ACTIVE' ? 'text-emerald-400' :
               missionState === 'PAUSED' ? 'text-amber-400' :
               missionState === 'EMERGENCY' ? 'text-red-400' :
@@ -621,50 +619,50 @@ export default function MissionMap({
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-3 text-xs">
+        <div className="grid grid-cols-3 gap-2 text-xs">
           <div className="space-y-1">
-            <label className="block text-slate-400">Cruise Altitude (m)</label>
+            <label className="block text-slate-400 text-[10px]">Alt (m)</label>
             <input
               type="number"
               min="1"
               step="1"
               value={cruiseAltitude}
               onChange={(e) => setCruiseAltitude(Number(e.target.value))}
-              className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-100"
+              className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-100 text-xs"
             />
           </div>
           <div className="space-y-1">
-            <label className="block text-slate-400">Cruise Speed (m/s)</label>
+            <label className="block text-slate-400 text-[10px]">Speed (m/s)</label>
             <input
               type="number"
               min="0.1"
               step="0.1"
               value={cruiseSpeed}
               onChange={(e) => setCruiseSpeed(Number(e.target.value))}
-              className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-100"
+              className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-100 text-xs"
             />
           </div>
           <div className="space-y-1">
-            <label className="block text-slate-400">Spacing Distance (m)</label>
+            <label className="block text-slate-400 text-[10px]">Spacing (m)</label>
             <input
               type="number"
               min="0.1"
               step="0.1"
               value={spacingDistance}
               onChange={(e) => setSpacingDistance(Number(e.target.value))}
-              className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-100"
+              className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-100 text-xs"
             />
           </div>
         </div>
       </div>
 
-      <div className="mt-3 p-3 bg-slate-900 rounded-lg border border-slate-700">
-        <h5 className="text-slate-300 text-sm font-medium mb-3">Mission Controls</h5>
+      <div className="mt-2 p-2 bg-slate-900 rounded-lg border border-slate-700">
+        <h5 className="text-slate-300 text-sm font-medium mb-2">Mission Controls</h5>
         <div className="flex flex-col gap-2">
           <button
             onClick={handleStartOrUpdateClick}
             disabled={startUpdateBtn.disabled}
-            className={`w-full px-6 py-3 text-white font-semibold rounded-lg transition-all duration-150 ${startUpdateBtn.style} ${
+            className={`w-full px-4 py-2 text-sm text-white font-semibold rounded-lg transition-all duration-150 ${startUpdateBtn.style} ${
               isStartUpdatePressed ? 'scale-95 brightness-90' : 'active:scale-95'
             }`}
           >
@@ -674,7 +672,7 @@ export default function MissionMap({
           {pauseResumeBtn.visible && (
             <button
               onClick={handlePauseResumeClick}
-              className={`w-full px-6 py-3 text-white font-semibold rounded-lg transition-all duration-150 ${pauseResumeBtn.style} ${
+              className={`w-full px-4 py-2 text-sm text-white font-semibold rounded-lg transition-all duration-150 ${pauseResumeBtn.style} ${
                 isPauseResumePressed ? 'scale-95 brightness-90' : 'active:scale-95'
               }`}
             >
@@ -685,7 +683,7 @@ export default function MissionMap({
           <button
             onClick={handleEmergencyClick}
             disabled={!emergencyEnabled}
-            className={`w-full px-6 py-3 text-white font-semibold rounded-lg transition-all duration-150 ${
+            className={`w-full px-4 py-2 text-sm text-white font-semibold rounded-lg transition-all duration-150 ${
               emergencyEnabled
                 ? 'bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/20'
                 : 'bg-slate-700 text-slate-500 cursor-not-allowed'

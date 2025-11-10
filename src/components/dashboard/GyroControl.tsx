@@ -249,16 +249,16 @@ export default function GyroControl({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h4 className="text-slate-300 font-medium">
+        <h4 className="text-slate-300 font-medium text-sm">
           Gyro Control &nbsp;
-          <span className="text-xs text-slate-500">(Drone: {droneId})</span>
+          <span className="text-[10px] text-slate-500">(Drone: {droneId})</span>
         </h4>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button
             onClick={toggleHold}
-            className={`px-3 py-1 text-xs font-semibold rounded transition-all ${
+            className={`px-2 py-1 text-[10px] font-semibold rounded transition-all ${
               isHoldMode
                 ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/50'
                 : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
@@ -266,19 +266,19 @@ export default function GyroControl({
           >
             {isHoldMode ? 'Hold Active' : 'Hold'}
           </button>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <div className={`w-2 h-2 rounded-full ${
               isActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-600'
             }`}></div>
-            <span className="text-xs text-slate-400">
-              {isActive ? 'Gyro Linked' : 'Standby'}
+            <span className="text-[10px] text-slate-400">
+              {isActive ? 'Linked' : 'Off'}
             </span>
           </div>
         </div>
       </div>
 
-      <div className="relative w-full h-72 bg-slate-900 rounded-lg border-2 border-slate-700 overflow-hidden">
-        <div className="absolute inset-0 flex items-center justify-center">
+      <div className="relative w-full h-80 bg-slate-900 rounded-lg border-2 border-slate-700 overflow-hidden">
+        <div className="absolute inset-0 flex items-center justify-center pb-24">
           <div
             className="relative flex items-center justify-center"
             style={{
@@ -319,11 +319,11 @@ export default function GyroControl({
           </div>
         </div>
 
-        <div className="absolute bottom-4 left-4 right-4 p-3 bg-slate-800/80 rounded backdrop-blur-sm">
+        <div className="absolute bottom-3 left-3 right-3 p-3 bg-slate-800/90 rounded backdrop-blur-sm">
           <div className="flex items-center justify-between mb-2">
             <span className="text-lg font-bold text-sky-400">{manualYaw.toFixed(1)}°</span>
             <span className="text-xs text-slate-500">
-              Tilt → XY movement, Slider → Yaw
+              Tilt → XY, Slider → Yaw
             </span>
           </div>
           <input
@@ -346,7 +346,7 @@ export default function GyroControl({
         </div>
       </div>
 
-      <div className="p-3 bg-slate-900 rounded-lg border border-slate-700 flex flex-col gap-3">
+      <div className="p-2 bg-slate-900 rounded-lg border border-slate-700 flex flex-col gap-2">
         {!isActive && (
           <div className="flex items-center gap-3 text-xs">
             <div className="flex-1">
@@ -370,26 +370,26 @@ export default function GyroControl({
           <button
             onClick={handleTakeoff}
             disabled={missionState !== 'IDLE'}
-            className={`w-full flex items-center justify-center gap-2 px-6 py-3 font-semibold rounded-lg transition-all duration-150 ${
+            className={`w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-150 ${
               missionState === 'IDLE'
                 ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/40 active:scale-95'
                 : 'bg-slate-800 text-slate-500 cursor-not-allowed'
             }`}
           >
-            <PlaneTakeoff className="w-5 h-5" />
+            <PlaneTakeoff className="w-4 h-4" />
             Takeoff
           </button>
         ) : (
           <button
             onClick={handleLand}
-            className="w-full flex items-center justify-center gap-2 px-6 py-3 font-semibold rounded-lg transition-all duration-150 bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/40 active:scale-95"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-150 bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/40 active:scale-95"
           >
-            <PlaneLanding className="w-5 h-5" />
+            <PlaneLanding className="w-4 h-4" />
             Land
           </button>
         )}
 
-        <p className="text-[10px] text-slate-500">
+        <p className="text-xs text-slate-500">
           Gyro Flight is available only for single drone when mission is IDLE.
           Tilt is quantized and converted to velocity commands.
         </p>
