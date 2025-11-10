@@ -165,26 +165,34 @@ export default function GyroControl({
       return;
     }
 
-    rosConnection.sendGyroCommand({
+    const success = rosConnection.sendGyroCommand({
       drone_id: droneId,
       command: 'TAKEOFF',
       target_altitude_m: targetAlt,
     });
 
-    setIsActive(true);
-    onActiveChange?.(true);
+    if (success) {
+      setIsActive(true);
+      onActiveChange?.(true);
+    } else {
+      alert('Failed to send takeoff command. Check server connection.');
+    }
   };
 
   const handleLand = () => {
     if (!droneId) return;
 
-    rosConnection.sendGyroCommand({
+    const success = rosConnection.sendGyroCommand({
       drone_id: droneId,
       command: 'LAND',
     });
 
-    setIsActive(false);
-    onActiveChange?.(false);
+    if (success) {
+      setIsActive(false);
+      onActiveChange?.(false);
+    } else {
+      alert('Failed to send land command. Check server connection.');
+    }
   };
 
   const sendGyroDisable = () => {

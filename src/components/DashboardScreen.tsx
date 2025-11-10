@@ -18,8 +18,13 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
   const [missionState, setMissionState] = useState<MissionState>('IDLE');
   const [currentMissionId, setCurrentMissionId] = useState<string>('');
   const [gyroActive, setGyroActive] = useState(false);
+  const [serverConnected, setServerConnected] = useState(false);
 
   useEffect(() => {
+    const unsubscribeConnection = rosConnection.onConnectionChange((connected) => {
+      setServerConnected(connected);
+    });
+
     const unsubscribeStatus = rosConnection.onStatusUpdate((updatedDrones) => {
       setDrones(updatedDrones);
 
@@ -68,6 +73,7 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
     });
 
     return () => {
+      unsubscribeConnection();
       unsubscribeStatus();
       unsubscribeMission();
     };
@@ -130,7 +136,9 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <span className="text-xs text-slate-400">Server</span>
-              <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
+              <div className={`w-3 h-3 rounded-full ${
+                serverConnected ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'
+              }`}></div>
             </div>
 
             <button

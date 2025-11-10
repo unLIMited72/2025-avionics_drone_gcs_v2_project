@@ -410,16 +410,16 @@ class ROSConnection {
     return this.ros;
   }
 
-  sendGyroCommand(payload: GyroControlPayload) {
+  sendGyroCommand(payload: GyroControlPayload): boolean {
     if (!this.ros || !this.connected) {
       console.warn('[ROSConnection] Cannot send gyro command: not connected');
-      return;
+      return false;
     }
     if (!this.gyroControlTopic) {
       this.setupGyroControlTopic();
       if (!this.gyroControlTopic) {
         console.warn('[ROSConnection] gyroControlTopic not ready');
-        return;
+        return false;
       }
     }
 
@@ -429,8 +429,10 @@ class ROSConnection {
       });
       this.gyroControlTopic.publish(msg);
       console.log('[ROSConnection] Gyro command sent:', payload.command);
+      return true;
     } catch (e) {
       console.error('[ROSConnection] Failed to publish gyro command:', e);
+      return false;
     }
   }
 }

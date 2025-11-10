@@ -161,6 +161,25 @@ export default function MissionMap({
     return () => {
       unsubscribeConnection();
       unsubscribeTrails();
+
+      if (missionPlanTopicRef.current) {
+        try {
+          missionPlanTopicRef.current.unadvertise();
+          console.log('[MissionMap] Unadvertised mission_plan_raw topic');
+        } catch (e) {
+          console.warn('[MissionMap] Error unadvertising mission_plan_raw:', e);
+        }
+      }
+
+      if (missionCommandTopicRef.current) {
+        try {
+          missionCommandTopicRef.current.unadvertise();
+          console.log('[MissionMap] Unadvertised mission_command_raw topic');
+        } catch (e) {
+          console.warn('[MissionMap] Error unadvertising mission_command_raw:', e);
+        }
+      }
+
       missionPlanTopicRef.current = null;
       missionCommandTopicRef.current = null;
     };
