@@ -61,6 +61,16 @@ export default function GyroControl({
       return;
     }
 
+    if (typeof (DeviceOrientationEvent as any).requestPermission !== 'function') {
+      setHasPermission(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!window.DeviceOrientationEvent || !hasPermission) {
+      return;
+    }
+
     const handleOrientation = (event: DeviceOrientationEvent) => {
       const alpha = event.alpha ?? 0;
       const beta = event.beta ?? 0;
@@ -87,26 +97,11 @@ export default function GyroControl({
       }
     };
 
-    if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
-      (DeviceOrientationEvent as any).requestPermission()
-        .then((permissionState: string) => {
-          if (permissionState === 'granted') {
-            setHasPermission(true);
-            window.addEventListener('deviceorientation', handleOrientation);
-          }
-        })
-        .catch(() => {
-          setIsSupported(false);
-        });
-    } else {
-      setHasPermission(true);
-      window.addEventListener('deviceorientation', handleOrientation);
-    }
-
+    window.addEventListener('deviceorientation', handleOrientation);
     return () => {
       window.removeEventListener('deviceorientation', handleOrientation);
     };
-  }, [manualYaw, isHoldMode, isActive]);
+  }, [hasPermission, manualYaw, isHoldMode, isActive]);
 
   const requestPermission = async () => {
     if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
@@ -117,7 +112,10 @@ export default function GyroControl({
         }
       } catch (error) {
         console.error('Permission request failed:', error);
+        setIsSupported(false);
       }
+    } else {
+      setHasPermission(true);
     }
   };
 

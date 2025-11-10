@@ -74,6 +74,10 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
   }, [gyroActive, flightMode]);
 
   const handleSelectDrone = useCallback((droneId: string) => {
+    if (gyroActive || missionState !== 'IDLE') {
+      return;
+    }
+
     setSelectedDrones(prev => {
       const newSet = new Set(prev);
       if (newSet.has(droneId)) {
@@ -94,13 +98,14 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
 
       return newSet;
     });
-  }, [flightMode]);
+  }, [flightMode, gyroActive, missionState]);
 
   const handleDisconnectAll = useCallback(() => {
     rosConnection.disconnect();
     onDisconnect();
   }, [onDisconnect]);
 
+  const selectionLocked = gyroActive || missionState !== 'IDLE';
   const canUseMission = selectedDrones.size >= 1 && !gyroActive;
   const canUseGyro = selectedDrones.size === 1 && missionState === 'IDLE';
 
@@ -157,6 +162,7 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
                 battery={drone.battery}
                 isSelected={selectedDrones.has(drone.id)}
                 onSelect={() => handleSelectDrone(drone.id)}
+                selectDisabled={selectionLocked}
               />
             ))}
           </div>

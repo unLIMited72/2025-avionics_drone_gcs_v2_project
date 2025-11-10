@@ -12,6 +12,7 @@ interface DroneStatusBarProps {
   battery: number;
   isSelected: boolean;
   onSelect: () => void;
+  selectDisabled?: boolean;
 }
 
 const getBatteryColor = (level: number) => {
@@ -29,6 +30,7 @@ function DroneStatusBar({
   battery,
   isSelected,
   onSelect,
+  selectDisabled = false,
 }: DroneStatusBarProps) {
 
   return (
@@ -105,9 +107,12 @@ function DroneStatusBar({
         </div>
 
         <button
-          onClick={onSelect}
+          onClick={selectDisabled ? undefined : onSelect}
+          disabled={selectDisabled}
           className={`px-3 py-1.5 text-xs font-semibold rounded transition-colors ${
-            isSelected
+            selectDisabled
+              ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
+              : isSelected
               ? 'bg-sky-600 hover:bg-sky-700 text-white'
               : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
           }`}
