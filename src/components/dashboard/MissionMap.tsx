@@ -17,9 +17,7 @@ interface MissionMapProps {
   drones?: DroneStatus[];
   selectedIds?: Set<string>;
   missionState: MissionState;
-  onStartOrUpdate: () => void;
-  onPauseOrResume: () => void;
-  onEmergencyReturn: () => void;
+  currentMissionId?: string;
 }
 
 type LandingMode = 'HOME' | 'LAST_WAYPOINT';
@@ -92,9 +90,7 @@ export default function MissionMap({
   drones = [],
   selectedIds = new Set(),
   missionState,
-  onStartOrUpdate,
-  onPauseOrResume,
-  onEmergencyReturn,
+  currentMissionId = '',
 }: MissionMapProps) {
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
   const [selectedWaypoint, setSelectedWaypoint] = useState<number | null>(null);
@@ -107,6 +103,7 @@ export default function MissionMap({
   const [cruiseSpeed, setCruiseSpeed] = useState<number>(5);
   const [spacingDistance, setSpacingDistance] = useState<number>(10);
   const [missionId, setMissionId] = useState<string>('');
+  const [droneTrails, setDroneTrails] = useState<Map<string, Array<{lat: number, lng: number, timestamp: number}>>>(new Map());
 
   const [isStartUpdatePressed, setIsStartUpdatePressed] = useState(false);
   const [isPauseResumePressed, setIsPauseResumePressed] = useState(false);
@@ -152,13 +149,18 @@ export default function MissionMap({
 
     updateRos();
 
-    const unsubscribe = rosConnection.onConnectionChange((connected) => {
+    const unsubscribeConnection = rosConnection.onConnectionChange((connected) => {
       console.log('[MissionMap] Connection status changed:', connected);
       updateRos();
     });
 
+    const unsubscribeTrails = rosConnection.onTrailUpdate((trails) => {
+      setDroneTrails(trails);
+    });
+
     return () => {
-      unsubscribe();
+      unsubscribeConnection();
+      unsubscribeTrails();
       missionPlanTopicRef.current = null;
       missionCommandTopicRef.current = null;
     };
@@ -217,8 +219,11 @@ export default function MissionMap({
       return null;
     }
 
-    const id = missionId || `mission_${Date.now()}`;
-    if (!missionId) setMissionId(id);
+    let id = missionId;
+    if (missionState === 'IDLE' || !id) {
+      id = `mission_${Date.now()}`;
+      setMissionId(id);
+    }
 
     return {
       mission_id: id,
@@ -312,43 +317,64 @@ export default function MissionMap({
       } else {
         console.log('[MissionMap] Mission plan updated (no START command, state is not IDLE)');
       }
-
-      onStartOrUpdate();
     } catch (err) {
       console.error('[MissionMap] Failed to send mission plan:', err);
       alert('Failed to send mission plan');
       setIsStartUpdatePressed(false);
     }
-  }, [ros, missionPlanTopicRef, missionCommandTopicRef, buildMissionPlanPayload, missionState, onStartOrUpdate]);
+  }, [ros, missionPlanTopicRef, missionCommandTopicRef, buildMissionPlanPayload, missionState]);
 
   const handlePauseResumeClick = useCallback(() => {
     setIsPauseResumePressed(true);
     setTimeout(() => setIsPauseResumePressed(false), 300);
 
     if (missionState === 'ACTIVE') {
-      if (sendMissionCommand('PAUSE')) {
-        onPauseOrResume();
-      }
+      sendMissionCommand('PAUSE');
     } else if (missionState === 'PAUSED') {
-      if (sendMissionCommand('RESUME')) {
-        onPauseOrResume();
-      }
+      sendMissionCommand('RESUME');
     }
-  }, [missionState, sendMissionCommand, onPauseOrResume]);
+  }, [missionState, sendMissionCommand]);
 
   const handleEmergencyClick = useCallback(() => {
     setIsEmergencyPressed(true);
     setTimeout(() => setIsEmergencyPressed(false), 300);
 
-    if (sendMissionCommand('EMERGENCY_RETURN')) {
-      onEmergencyReturn();
+    sendMissionCommand('EMERGENCY_RETURN');
+  }, [sendMissionCommand]);
+
+  useEffect(() => {
+    if (missionState === 'IDLE' && waypoints.length > 0) {
+      setWaypoints([]);
+      setSelectedWaypoint(null);
+      setMissionId('');
     }
-  }, [sendMissionCommand, onEmergencyReturn]);
+  }, [missionState]);
+
+  useEffect(() => {
+    if (currentMissionId && currentMissionId !== missionId) {
+      setMissionId(currentMissionId);
+    }
+  }, [currentMissionId]);
 
   const pathCoordinates = useMemo(
     () => waypoints.map(wp => [wp.lat, wp.lng] as [number, number]),
     [waypoints]
   );
+
+  const getPathStyle = () => {
+    switch (missionState) {
+      case 'IDLE':
+        return { color: '#94a3b8', weight: 2, opacity: 0.5, dashArray: '8, 8' };
+      case 'ACTIVE':
+        return { color: '#0ea5e9', weight: 3, opacity: 0.9, dashArray: '8, 8' };
+      case 'PAUSED':
+        return { color: '#f59e0b', weight: 3, opacity: 0.8, dashArray: '8, 8' };
+      case 'EMERGENCY':
+        return { color: '#ef4444', weight: 3, opacity: 0.9, dashArray: '4, 8' };
+      default:
+        return { color: '#0ea5e9', weight: 2, opacity: 0.8, dashArray: '8, 8' };
+    }
+  };
 
   const selectedWaypointData = useMemo(
     () => waypoints.find(wp => wp.id === selectedWaypoint),
@@ -487,12 +513,24 @@ export default function MissionMap({
           {pathCoordinates.length > 1 && (
             <Polyline
               positions={pathCoordinates}
-              color="#0ea5e9"
-              weight={2}
-              opacity={0.8}
-              dashArray="8, 8"
+              {...getPathStyle()}
             />
           )}
+
+          {Array.from(droneTrails.entries()).map(([droneId, trail]) => {
+            if (trail.length < 2) return null;
+            const trailCoords = trail.map(p => [p.lat, p.lng] as [number, number]);
+            const isSelected = selectedIds.has(droneId);
+            return (
+              <Polyline
+                key={`trail-${droneId}`}
+                positions={trailCoords}
+                color={isSelected ? '#10b981' : '#6ee7b7'}
+                weight={isSelected ? 2 : 1.5}
+                opacity={0.7}
+              />
+            );
+          })}
         </MapContainer>
 
         {waypoints.length === 0 && (

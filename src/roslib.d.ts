@@ -43,3 +43,9 @@ declare module 'roslib' {
 
   export = ROSLIB;
 }
+
+export interface MissionStatusMessage {
+  mission_id: string;
+  state: number;
+  drone_ids: string[];
+}

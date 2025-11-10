@@ -3,7 +3,7 @@ import { X } from 'lucide-react';
 import DroneStatusBar from './dashboard/DroneStatusBar';
 import MissionMap from './dashboard/MissionMap';
 import GyroControl from './dashboard/GyroControl';
-import { rosConnection, DroneStatus } from '../services/rosConnection';
+import { rosConnection, DroneStatus, MissionStateEnum } from '../services/rosConnection';
 
 export type MissionState = 'IDLE' | 'ACTIVE' | 'PAUSED' | 'EMERGENCY';
 
@@ -16,12 +16,12 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
   const [selectedDrones, setSelectedDrones] = useState<Set<string>>(new Set());
   const [flightMode, setFlightMode] = useState<'mission' | 'gyro' | null>(null);
   const [missionState, setMissionState] = useState<MissionState>('IDLE');
+  const [currentMissionId, setCurrentMissionId] = useState<string>('');
 
   useEffect(() => {
-    const unsubscribe = rosConnection.onStatusUpdate((updatedDrones) => {
+    const unsubscribeStatus = rosConnection.onStatusUpdate((updatedDrones) => {
       setDrones(updatedDrones);
 
-      // 더 이상 존재하지 않는 드론만 선택 해제
       setSelectedDrones(prev => {
         const currentIds = new Set(updatedDrones.map(d => d.id));
         const newSet = new Set<string>();
@@ -32,7 +32,6 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
           }
         });
 
-        // 실제로 내용이 동일한 경우에만 prev 반환
         if (newSet.size === prev.size) {
           let same = true;
           prev.forEach(id => {
@@ -45,8 +44,24 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
       });
     });
 
+    const unsubscribeMission = rosConnection.onMissionStatusUpdate((status) => {
+      const stateMap: Record<number, MissionState> = {
+        [MissionStateEnum.STATE_IDLE]: 'IDLE',
+        [MissionStateEnum.STATE_ACTIVE]: 'ACTIVE',
+        [MissionStateEnum.STATE_PAUSED]: 'PAUSED',
+        [MissionStateEnum.STATE_EMERGENCY]: 'EMERGENCY',
+        [MissionStateEnum.STATE_COMPLETED]: 'IDLE',
+        [MissionStateEnum.STATE_ABORTED]: 'IDLE',
+      };
+
+      const newState = stateMap[status.state] || 'IDLE';
+      setMissionState(newState);
+      setCurrentMissionId(status.mission_id);
+    });
+
     return () => {
-      unsubscribe();
+      unsubscribeStatus();
+      unsubscribeMission();
     };
   }, []);
 
@@ -175,21 +190,7 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
                 drones={drones}
                 selectedIds={selectedDrones}
                 missionState={missionState}
-                onStartOrUpdate={() => {
-                  if (missionState === 'IDLE') {
-                    setMissionState('ACTIVE');
-                  }
-                }}
-                onPauseOrResume={() => {
-                  if (missionState === 'ACTIVE') {
-                    setMissionState('PAUSED');
-                  } else if (missionState === 'PAUSED') {
-                    setMissionState('ACTIVE');
-                  }
-                }}
-                onEmergencyReturn={() => {
-                  setMissionState('EMERGENCY');
-                }}
+                currentMissionId={currentMissionId}
               />
             </div>
           )}

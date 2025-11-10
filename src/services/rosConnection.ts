@@ -1,4 +1,5 @@
 import ROSLIB from 'roslib';
+import { MissionStatusMessage } from '../roslib';
 
 export interface DroneStatus {
   id: string;
@@ -25,16 +26,36 @@ export interface UIStatusMessage {
   heading_degs: number[];
 }
 
+export interface MissionStatus {
+  mission_id: string;
+  state: number;
+  drone_ids: string[];
+}
+
+export const MissionStateEnum = {
+  STATE_IDLE: 0,
+  STATE_ACTIVE: 1,
+  STATE_PAUSED: 2,
+  STATE_EMERGENCY: 3,
+  STATE_COMPLETED: 4,
+  STATE_ABORTED: 5,
+} as const;
+
 class ROSConnection {
   private ros: ROSLIB.Ros | null = null;
   private uiStatusTopic: ROSLIB.Topic | null = null;
+  private missionStatusTopic: ROSLIB.Topic | null = null;
   private connectionCallbacks: ((connected: boolean) => void)[] = [];
   private statusCallbacks: ((drones: DroneStatus[]) => void)[] = [];
+  private missionStatusCallbacks: ((status: MissionStatus) => void)[] = [];
   private reconnectTimer: NodeJS.Timeout | null = null;
   private lastMessageTime: number = 0;
   private connectionCheckInterval: NodeJS.Timeout | null = null;
   private isDisconnecting: boolean = false;
   private connected: boolean = false;
+  private currentMissionStatus: MissionStatus | null = null;
+  private droneTrails: Map<string, Array<{lat: number, lng: number, timestamp: number}>> = new Map();
+  private trailCallbacks: ((trails: Map<string, Array<{lat: number, lng: number, timestamp: number}>>) => void)[] = [];
 
   connect(url: string) {
     this.disconnect();
@@ -58,6 +79,7 @@ class ROSConnection {
 
       setTimeout(() => {
         this.subscribeTopic();
+        this.subscribeMissionStatus();
         this.startConnectionCheck();
       }, 100);
     });
@@ -101,6 +123,33 @@ class ROSConnection {
     return [];
   }
 
+  private subscribeMissionStatus() {
+    if (!this.ros) return;
+
+    this.missionStatusTopic = new ROSLIB.Topic({
+      ros: this.ros,
+      name: '/gcs/mission_status',
+      messageType: 'px4_interface/msg/MissionStatus'
+    });
+
+    this.missionStatusTopic.subscribe((message: any) => {
+      const msg = message as MissionStatusMessage;
+      const status: MissionStatus = {
+        mission_id: msg.mission_id || '',
+        state: msg.state || 0,
+        drone_ids: msg.drone_ids || [],
+      };
+
+      this.currentMissionStatus = status;
+      this.notifyMissionStatusUpdate(status);
+
+      if (status.state === MissionStateEnum.STATE_COMPLETED ||
+          status.state === MissionStateEnum.STATE_ABORTED) {
+        this.clearDroneTrails();
+      }
+    });
+  }
+
   private subscribeTopic() {
     if (!this.ros) return;
 
@@ -130,7 +179,7 @@ class ROSConnection {
         const lon = msg.longitudes?.[i];
         const heading = msg.heading_degs?.[i];
 
-        return {
+        const drone = {
           id,
           connected: msg.heartbeats[i],
           battery: msg.battery_percentages[i],
@@ -141,6 +190,15 @@ class ROSConnection {
           longitude: (lon !== undefined && lon !== 0) ? lon : undefined,
           headingDeg: heading !== undefined ? heading : undefined,
         };
+
+        if (this.currentMissionStatus?.state === MissionStateEnum.STATE_ACTIVE ||
+            this.currentMissionStatus?.state === MissionStateEnum.STATE_PAUSED) {
+          if (lat !== undefined && lon !== undefined && lat !== 0 && lon !== 0) {
+            this.addDroneTrailPoint(id, lat, lon);
+          }
+        }
+
+        return drone;
       });
 
       this.notifyStatusUpdate(drones);
@@ -193,10 +251,17 @@ class ROSConnection {
       this.uiStatusTopic = null;
     }
 
+    if (this.missionStatusTopic) {
+      this.missionStatusTopic.unsubscribe();
+      this.missionStatusTopic = null;
+    }
+
     const rosToClose = this.ros;
     this.ros = null;
     this.connected = false;
     this.lastMessageTime = 0;
+    this.currentMissionStatus = null;
+    this.clearDroneTrails();
     this.notifyConnectionStatus(false);
 
     if (rosToClose) {
@@ -227,12 +292,80 @@ class ROSConnection {
     };
   }
 
+  onMissionStatusUpdate(callback: (status: MissionStatus) => void) {
+    this.missionStatusCallbacks.push(callback);
+    if (this.currentMissionStatus) {
+      callback(this.currentMissionStatus);
+    }
+    return () => {
+      this.missionStatusCallbacks = this.missionStatusCallbacks.filter(cb => cb !== callback);
+    };
+  }
+
+  onTrailUpdate(callback: (trails: Map<string, Array<{lat: number, lng: number, timestamp: number}>>) => void) {
+    this.trailCallbacks.push(callback);
+    callback(this.droneTrails);
+    return () => {
+      this.trailCallbacks = this.trailCallbacks.filter(cb => cb !== callback);
+    };
+  }
+
   private notifyConnectionStatus(connected: boolean) {
     this.connectionCallbacks.forEach(cb => cb(connected));
   }
 
   private notifyStatusUpdate(drones: DroneStatus[]) {
     this.statusCallbacks.forEach(cb => cb(drones));
+  }
+
+  private notifyMissionStatusUpdate(status: MissionStatus) {
+    this.missionStatusCallbacks.forEach(cb => cb(status));
+  }
+
+  private notifyTrailUpdate() {
+    this.trailCallbacks.forEach(cb => cb(this.droneTrails));
+  }
+
+  private addDroneTrailPoint(droneId: string, lat: number, lng: number) {
+    if (!this.droneTrails.has(droneId)) {
+      this.droneTrails.set(droneId, []);
+    }
+
+    const trail = this.droneTrails.get(droneId)!;
+    const timestamp = Date.now();
+
+    if (trail.length > 0) {
+      const lastPoint = trail[trail.length - 1];
+      const distance = Math.sqrt(
+        Math.pow(lat - lastPoint.lat, 2) + Math.pow(lng - lastPoint.lng, 2)
+      );
+
+      if (distance < 0.00001) {
+        return;
+      }
+    }
+
+    trail.push({ lat, lng, timestamp });
+
+    const MAX_TRAIL_POINTS = 500;
+    if (trail.length > MAX_TRAIL_POINTS) {
+      trail.shift();
+    }
+
+    this.notifyTrailUpdate();
+  }
+
+  private clearDroneTrails() {
+    this.droneTrails.clear();
+    this.notifyTrailUpdate();
+  }
+
+  getCurrentMissionStatus(): MissionStatus | null {
+    return this.currentMissionStatus;
+  }
+
+  getDroneTrails(): Map<string, Array<{lat: number, lng: number, timestamp: number}>> {
+    return this.droneTrails;
   }
 
   isConnected(): boolean {
