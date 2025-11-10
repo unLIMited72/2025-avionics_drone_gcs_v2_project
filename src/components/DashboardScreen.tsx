@@ -17,6 +17,7 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
   const [flightMode, setFlightMode] = useState<'mission' | 'gyro' | null>(null);
   const [missionState, setMissionState] = useState<MissionState>('IDLE');
   const [currentMissionId, setCurrentMissionId] = useState<string>('');
+  const [gyroActive, setGyroActive] = useState(false);
 
   useEffect(() => {
     const unsubscribeStatus = rosConnection.onStatusUpdate((updatedDrones) => {
@@ -56,15 +57,21 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
 
       const newState = stateMap[status.state] || 'IDLE';
       setMissionState(newState);
-      setCurrentMissionId(status.mission_id);
+      setCurrentMissionId(status.mission_id || '');
+
+      if (newState !== 'IDLE' && gyroActive) {
+        setGyroActive(false);
+        if (flightMode === 'gyro') {
+          setFlightMode(null);
+        }
+      }
     });
 
     return () => {
       unsubscribeStatus();
       unsubscribeMission();
     };
-  }, []);
-
+  }, [gyroActive, flightMode]);
 
   const handleSelectDrone = useCallback((droneId: string) => {
     setSelectedDrones(prev => {
@@ -75,10 +82,14 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
         newSet.add(droneId);
       }
 
+      if (newSet.size !== 1 && flightMode === 'gyro') {
+        setFlightMode(null);
+        setGyroActive(false);
+      }
+
       if (newSet.size === 0) {
         setFlightMode(null);
-      } else if (newSet.size > 1 && flightMode === 'gyro') {
-        setFlightMode(null);
+        setGyroActive(false);
       }
 
       return newSet;
@@ -90,8 +101,10 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
     onDisconnect();
   }, [onDisconnect]);
 
-  const canUseMission = selectedDrones.size >= 1;
-  const canUseGyro = selectedDrones.size === 1;
+  const canUseMission = selectedDrones.size >= 1 && !gyroActive;
+  const canUseGyro = selectedDrones.size === 1 && missionState === 'IDLE';
+
+  const selectedDroneId = selectedDrones.size === 1 ? Array.from(selectedDrones)[0] : '';
 
   return (
     <div className="h-full flex flex-col bg-slate-950">
@@ -99,7 +112,14 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-xl font-bold text-white">Drone GCS</h1>
-            <p className="text-sm text-slate-400">Ground Control Station</p>
+            <p className="text-sm text-slate-400">
+              Ground Control Station
+              {gyroActive && selectedDroneId && (
+                <span className="ml-2 text-xs text-sky-400">
+                  (Gyro Control: {selectedDroneId})
+                </span>
+              )}
+            </p>
           </div>
 
           <div className="flex items-center gap-3">
@@ -142,7 +162,6 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
           </div>
         )}
 
-
         <div className="mt-6 p-4 bg-slate-800 rounded-lg border border-slate-700">
           <h3 className="text-white font-semibold mb-3">Flight Control Mode</h3>
           <div className="flex gap-3">
@@ -160,14 +179,25 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
                   ? 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                   : 'bg-slate-800 text-slate-600 cursor-not-allowed'
               }`}
-              title={!canUseMission ? 'Select at least 1 drone to use Mission Flight' : ''}
+              title={
+                gyroActive
+                  ? 'Gyro control is active. Disable it first.'
+                  : !canUseMission
+                  ? 'Select at least 1 drone to use Mission Flight'
+                  : ''
+              }
             >
               Mission Flight
             </button>
+
             <button
               onClick={() => {
                 if (canUseGyro) {
-                  setFlightMode(flightMode === 'gyro' ? null : 'gyro');
+                  const next = flightMode === 'gyro' ? null : 'gyro';
+                  setFlightMode(next);
+                  if (next === null) {
+                    setGyroActive(false);
+                  }
                 }
               }}
               disabled={!canUseGyro}
@@ -178,7 +208,13 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
                   ? 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                   : 'bg-slate-800 text-slate-600 cursor-not-allowed'
               }`}
-              title={!canUseGyro ? 'Select exactly 1 drone to use Gyro Flight' : ''}
+              title={
+                missionState !== 'IDLE'
+                  ? 'Gyro Flight is only available when mission is IDLE.'
+                  : selectedDrones.size !== 1
+                  ? 'Select exactly 1 drone to use Gyro Flight'
+                  : ''
+              }
             >
               Gyro Flight
             </button>
@@ -195,9 +231,15 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
             </div>
           )}
 
-          {flightMode === 'gyro' && canUseGyro && (
+          {flightMode === 'gyro' && canUseGyro && selectedDroneId && (
             <div className="mt-4">
-              <GyroControl key={Array.from(selectedDrones)[0]} />
+              <GyroControl
+                droneId={selectedDroneId}
+                missionState={missionState}
+                onActiveChange={(active) => {
+                  setGyroActive(active);
+                }}
+              />
             </div>
           )}
         </div>

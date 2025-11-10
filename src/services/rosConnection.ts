@@ -41,10 +41,20 @@ export const MissionStateEnum = {
   STATE_ABORTED: 5,
 } as const;
 
+export interface GyroControlPayload {
+  drone_id: string;
+  command: 'TAKEOFF' | 'LAND' | 'CONTROL';
+  target_altitude_m?: number;
+  yaw_deg?: number;
+  vx_mps?: number;
+  vy_mps?: number;
+}
+
 class ROSConnection {
   private ros: ROSLIB.Ros | null = null;
   private uiStatusTopic: ROSLIB.Topic | null = null;
   private missionStatusTopic: ROSLIB.Topic | null = null;
+  private gyroControlTopic: ROSLIB.Topic | null = null;
   private connectionCallbacks: ((connected: boolean) => void)[] = [];
   private statusCallbacks: ((drones: DroneStatus[]) => void)[] = [];
   private missionStatusCallbacks: ((status: MissionStatus) => void)[] = [];
@@ -80,6 +90,7 @@ class ROSConnection {
       setTimeout(() => {
         this.subscribeTopic();
         this.subscribeMissionStatus();
+        this.setupGyroControlTopic();
         this.startConnectionCheck();
       }, 100);
     });
@@ -121,6 +132,20 @@ class ROSConnection {
     }
     console.error('Unexpected status_in_flights format:', statusInFlights);
     return [];
+  }
+
+  private setupGyroControlTopic() {
+    if (!this.ros) return;
+    if (this.gyroControlTopic) return;
+
+    this.gyroControlTopic = new ROSLIB.Topic({
+      ros: this.ros,
+      name: '/gcs/gyro_control_raw',
+      messageType: 'std_msgs/String',
+    });
+
+    this.gyroControlTopic.advertise();
+    console.log('[ROSConnection] Advertised /gcs/gyro_control_raw');
   }
 
   private subscribeMissionStatus() {
@@ -256,6 +281,15 @@ class ROSConnection {
       this.missionStatusTopic = null;
     }
 
+    if (this.gyroControlTopic) {
+      try {
+        this.gyroControlTopic.unadvertise();
+      } catch (e) {
+        console.warn('Gyro control topic unadvertise error:', e);
+      }
+      this.gyroControlTopic = null;
+    }
+
     const rosToClose = this.ros;
     this.ros = null;
     this.connected = false;
@@ -374,6 +408,30 @@ class ROSConnection {
 
   getRos(): ROSLIB.Ros | null {
     return this.ros;
+  }
+
+  sendGyroCommand(payload: GyroControlPayload) {
+    if (!this.ros || !this.connected) {
+      console.warn('[ROSConnection] Cannot send gyro command: not connected');
+      return;
+    }
+    if (!this.gyroControlTopic) {
+      this.setupGyroControlTopic();
+      if (!this.gyroControlTopic) {
+        console.warn('[ROSConnection] gyroControlTopic not ready');
+        return;
+      }
+    }
+
+    try {
+      const msg = new ROSLIB.Message({
+        data: JSON.stringify(payload),
+      });
+      this.gyroControlTopic.publish(msg);
+      console.log('[ROSConnection] Gyro command sent:', payload.command);
+    } catch (e) {
+      console.error('[ROSConnection] Failed to publish gyro command:', e);
+    }
   }
 }
 

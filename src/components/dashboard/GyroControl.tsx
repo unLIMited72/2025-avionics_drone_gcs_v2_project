@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Smartphone } from 'lucide-react';
+import { Smartphone, PlaneTakeoff, PlaneLanding } from 'lucide-react';
+import { rosConnection } from '../../services/rosConnection';
+import type { MissionState } from '../DashboardScreen';
 
 interface DroneControl {
   roll: number;
@@ -7,13 +9,51 @@ interface DroneControl {
   yaw: number;
 }
 
-export default function GyroControl() {
+interface GyroControlProps {
+  droneId: string;
+  missionState: MissionState;
+  onActiveChange?: (active: boolean) => void;
+}
+
+const mapTiltToLevel = (deg: number): number => {
+  const a = Math.abs(deg);
+  if (a < 5) return 0;
+  if (a < 15) return deg > 0 ? 1 : -1;
+  return deg > 0 ? 2 : -2;
+};
+
+const speedForLevel = (level: number): number => {
+  switch (level) {
+    case -2: return -2.0;
+    case -1: return -1.0;
+    case 1: return 1.0;
+    case 2: return 2.0;
+    default: return 0.0;
+  }
+};
+
+export default function GyroControl({
+  droneId,
+  missionState,
+  onActiveChange,
+}: GyroControlProps) {
   const [droneControl, setDroneControl] = useState<DroneControl>({ roll: 0, pitch: 0, yaw: 0 });
   const [manualYaw, setManualYaw] = useState<number>(0);
   const [isSupported, setIsSupported] = useState(true);
   const [hasPermission, setHasPermission] = useState(false);
   const [isHoldMode, setIsHoldMode] = useState(false);
+  const [targetAlt, setTargetAlt] = useState<number>(10);
+  const [isActive, setIsActive] = useState(false);
   const initialOrientation = useRef<{ alpha: number; beta: number; gamma: number } | null>(null);
+  const lastSendRef = useRef<number>(0);
+
+  useEffect(() => {
+    if (missionState !== 'IDLE' && isActive) {
+      setIsActive(false);
+      onActiveChange?.(false);
+      sendGyroDisable();
+    }
+  }, [missionState, isActive]);
 
   useEffect(() => {
     if (!window.DeviceOrientationEvent) {
@@ -22,20 +62,28 @@ export default function GyroControl() {
     }
 
     const handleOrientation = (event: DeviceOrientationEvent) => {
-      const alpha = event.alpha || 0;
-      const beta = event.beta || 0;
-      const gamma = event.gamma || 0;
+      const alpha = event.alpha ?? 0;
+      const beta = event.beta ?? 0;
+      const gamma = event.gamma ?? 0;
 
       if (!initialOrientation.current) {
         initialOrientation.current = { alpha, beta, gamma };
       }
 
       if (isHoldMode) {
-        setDroneControl({ roll: 0, pitch: 0, yaw: manualYaw });
+        const state = { roll: 0, pitch: 0, yaw: manualYaw };
+        setDroneControl(state);
+        if (isActive) {
+          throttledSendControl(state);
+        }
       } else {
-        const roll = gamma - initialOrientation.current.gamma;
-        const pitch = (beta - 90) - (initialOrientation.current.beta - 90);
-        setDroneControl({ roll, pitch, yaw: manualYaw });
+        const relRoll = gamma - initialOrientation.current.gamma;
+        const relPitch = (beta - 90) - (initialOrientation.current.beta - 90);
+        const state = { roll: relRoll, pitch: relPitch, yaw: manualYaw };
+        setDroneControl(state);
+        if (isActive) {
+          throttledSendControl(state);
+        }
       }
     };
 
@@ -58,13 +106,7 @@ export default function GyroControl() {
     return () => {
       window.removeEventListener('deviceorientation', handleOrientation);
     };
-  }, [manualYaw, isHoldMode]);
-
-  const handleYawChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const newYaw = parseFloat(e.target.value);
-    setManualYaw(newYaw);
-    setDroneControl(prev => ({ ...prev, yaw: newYaw }));
-  }, []);
+  }, [manualYaw, isHoldMode, isActive]);
 
   const requestPermission = async () => {
     if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
@@ -76,6 +118,99 @@ export default function GyroControl() {
       } catch (error) {
         console.error('Permission request failed:', error);
       }
+    }
+  };
+
+  const throttledSendControl = (state: DroneControl) => {
+    const now = Date.now();
+    if (now - lastSendRef.current < 80) return;
+    lastSendRef.current = now;
+
+    const rollLevel = mapTiltToLevel(state.roll);
+    const pitchLevel = mapTiltToLevel(state.pitch);
+
+    const vx = speedForLevel(-pitchLevel);
+    const vy = speedForLevel(rollLevel);
+
+    rosConnection.sendGyroCommand({
+      drone_id: droneId,
+      command: 'CONTROL',
+      yaw_deg: state.yaw,
+      vx_mps: vx,
+      vy_mps: vy,
+    });
+  };
+
+  const handleYawChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const newYaw = parseFloat(e.target.value);
+    setManualYaw(newYaw);
+    setDroneControl(prev => {
+      const next = { ...prev, yaw: newYaw };
+      if (isActive) {
+        throttledSendControl(next);
+      }
+      return next;
+    });
+  }, [isActive, droneId]);
+
+  const handleTakeoff = () => {
+    if (missionState !== 'IDLE') {
+      alert('Mission is not IDLE. Gyro takeoff is blocked.');
+      return;
+    }
+    if (!droneId) {
+      alert('No drone selected.');
+      return;
+    }
+    if (targetAlt <= 0) {
+      alert('Target altitude must be > 0.');
+      return;
+    }
+
+    rosConnection.sendGyroCommand({
+      drone_id: droneId,
+      command: 'TAKEOFF',
+      target_altitude_m: targetAlt,
+    });
+
+    setIsActive(true);
+    onActiveChange?.(true);
+  };
+
+  const handleLand = () => {
+    if (!droneId) return;
+
+    rosConnection.sendGyroCommand({
+      drone_id: droneId,
+      command: 'LAND',
+    });
+
+    setIsActive(false);
+    onActiveChange?.(false);
+  };
+
+  const sendGyroDisable = () => {
+    if (!droneId) return;
+    rosConnection.sendGyroCommand({
+      drone_id: droneId,
+      command: 'CONTROL',
+      vx_mps: 0,
+      vy_mps: 0,
+      yaw_deg: manualYaw,
+    });
+  };
+
+  const toggleHold = () => {
+    const next = !isHoldMode;
+    setIsHoldMode(next);
+    if (next && isActive) {
+      rosConnection.sendGyroCommand({
+        drone_id: droneId,
+        command: 'CONTROL',
+        vx_mps: 0,
+        vy_mps: 0,
+        yaw_deg: manualYaw,
+      });
     }
   };
 
@@ -110,10 +245,13 @@ export default function GyroControl() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h4 className="text-slate-300 font-medium">Gyro Control</h4>
+        <h4 className="text-slate-300 font-medium">
+          Gyro Control &nbsp;
+          <span className="text-xs text-slate-500">(Drone: {droneId})</span>
+        </h4>
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setIsHoldMode(!isHoldMode)}
+            onClick={toggleHold}
             className={`px-3 py-1 text-xs font-semibold rounded transition-all ${
               isHoldMode
                 ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/50'
@@ -123,13 +261,17 @@ export default function GyroControl() {
             {isHoldMode ? 'Hold Active' : 'Hold'}
           </button>
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-            <span className="text-xs text-slate-400">Active</span>
+            <div className={`w-2 h-2 rounded-full ${
+              isActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-600'
+            }`}></div>
+            <span className="text-xs text-slate-400">
+              {isActive ? 'Gyro Linked' : 'Standby'}
+            </span>
           </div>
         </div>
       </div>
 
-      <div className="relative w-full h-96 bg-slate-900 rounded-lg border-2 border-slate-700 overflow-hidden">
+      <div className="relative w-full h-72 bg-slate-900 rounded-lg border-2 border-slate-700 overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center">
           <div
             className="relative flex items-center justify-center"
@@ -174,6 +316,9 @@ export default function GyroControl() {
         <div className="absolute bottom-4 left-4 right-4 p-3 bg-slate-800/80 rounded backdrop-blur-sm">
           <div className="flex items-center justify-between mb-2">
             <span className="text-lg font-bold text-sky-400">{manualYaw.toFixed(1)}°</span>
+            <span className="text-xs text-slate-500">
+              Tilt → XY movement, Slider → Yaw
+            </span>
           </div>
           <input
             type="range"
@@ -193,6 +338,52 @@ export default function GyroControl() {
             <span>180°</span>
           </div>
         </div>
+      </div>
+
+      <div className="p-3 bg-slate-900 rounded-lg border border-slate-700 flex flex-col gap-3">
+        <div className="flex items-center gap-3 text-xs">
+          <div className="flex-1">
+            <label className="block text-slate-400 mb-1">
+              Target Altitude (m)
+            </label>
+            <input
+              type="number"
+              min={1}
+              step={1}
+              value={targetAlt}
+              onChange={(e) => setTargetAlt(Number(e.target.value))}
+              className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-100"
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-3">
+          <button
+            onClick={handleTakeoff}
+            disabled={missionState !== 'IDLE'}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-colors
+              ${missionState === 'IDLE'
+                ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                : 'bg-slate-800 text-slate-500 cursor-not-allowed'}
+            `}
+          >
+            <PlaneTakeoff className="w-4 h-4" />
+            Takeoff
+          </button>
+
+          <button
+            onClick={handleLand}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-colors bg-red-500 hover:bg-red-600 text-white"
+          >
+            <PlaneLanding className="w-4 h-4" />
+            Land
+          </button>
+        </div>
+
+        <p className="text-[10px] text-slate-500">
+          Gyro Flight is available only for single drone when mission is IDLE.
+          Tilt is quantized and converted to velocity commands.
+        </p>
       </div>
     </div>
   );
