@@ -391,10 +391,10 @@ export default function MissionMap({
 
   const pathCoordinates = useMemo(
     () => waypoints.map(wp => [wp.lat, wp.lng] as [number, number]),
-    [waypoints, missionState]
+    [waypoints]
   );
 
-  const getPathStyle = () => {
+  const pathStyle = useMemo(() => {
     switch (missionState) {
       case 'IDLE':
         return { color: '#94a3b8', weight: 2, opacity: 0.5, dashArray: '8, 8' };
@@ -407,14 +407,14 @@ export default function MissionMap({
       default:
         return { color: '#0ea5e9', weight: 2, opacity: 0.8, dashArray: '8, 8' };
     }
-  };
+  }, [missionState]);
 
   const selectedWaypointData = useMemo(
     () => waypoints.find(wp => wp.id === selectedWaypoint),
     [waypoints, selectedWaypoint]
   );
 
-  const getStartUpdateButtonConfig = () => {
+  const startUpdateBtn = useMemo(() => {
     if (missionState === 'IDLE') {
       return {
         label: 'Start Mission',
@@ -434,9 +434,9 @@ export default function MissionMap({
         disabled: true,
       };
     }
-  };
+  }, [missionState]);
 
-  const getPauseResumeButtonConfig = () => {
+  const pauseResumeBtn = useMemo(() => {
     if (missionState === 'ACTIVE') {
       return {
         label: 'Pause',
@@ -456,11 +456,12 @@ export default function MissionMap({
         visible: false,
       };
     }
-  };
+  }, [missionState]);
 
-  const startUpdateBtn = getStartUpdateButtonConfig();
-  const pauseResumeBtn = getPauseResumeButtonConfig();
-  const emergencyEnabled = missionState === 'ACTIVE' || missionState === 'PAUSED';
+  const emergencyEnabled = useMemo(
+    () => missionState === 'ACTIVE' || missionState === 'PAUSED',
+    [missionState]
+  );
 
   return (
     <div className="space-y-3">
@@ -545,7 +546,7 @@ export default function MissionMap({
             <Polyline
               key={`path-${missionState}`}
               positions={pathCoordinates}
-              {...getPathStyle()}
+              {...pathStyle}
             />
           )}
 

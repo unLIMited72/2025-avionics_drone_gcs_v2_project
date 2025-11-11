@@ -18,13 +18,8 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
   const [missionState, setMissionState] = useState<MissionState>('IDLE');
   const [currentMissionId, setCurrentMissionId] = useState<string>('');
   const [gyroActive, setGyroActive] = useState(false);
-  const [serverConnected, setServerConnected] = useState(false);
 
   useEffect(() => {
-    const unsubscribeConnection = rosConnection.onConnectionChange((connected) => {
-      setServerConnected(connected);
-    });
-
     const unsubscribeStatus = rosConnection.onStatusUpdate((updatedDrones) => {
       setDrones(updatedDrones);
 
@@ -73,7 +68,6 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
     });
 
     return () => {
-      unsubscribeConnection();
       unsubscribeStatus();
       unsubscribeMission();
     };

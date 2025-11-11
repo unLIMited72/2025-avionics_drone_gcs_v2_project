@@ -53,7 +53,7 @@ export default function GyroControl({
       onActiveChange?.(false);
       sendGyroDisable();
     }
-  }, [missionState, isActive]);
+  }, [missionState, isActive, onActiveChange, sendGyroDisable]);
 
   useEffect(() => {
     if (!window.DeviceOrientationEvent) {
@@ -103,7 +103,7 @@ export default function GyroControl({
     };
   }, [hasPermission, manualYaw, isHoldMode, isActive]);
 
-  const requestPermission = async () => {
+  const requestPermission = useCallback(async () => {
     if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
       try {
         const permissionState = await (DeviceOrientationEvent as any).requestPermission();
@@ -117,7 +117,7 @@ export default function GyroControl({
     } else {
       setHasPermission(true);
     }
-  };
+  }, []);
 
   const throttledSendControl = (state: DroneControl) => {
     const now = Date.now();
@@ -149,9 +149,9 @@ export default function GyroControl({
       }
       return next;
     });
-  }, [isActive, droneId]);
+  }, [isActive]);
 
-  const handleTakeoff = () => {
+  const handleTakeoff = useCallback(() => {
     if (missionState !== 'IDLE') {
       alert('Mission is not IDLE. Gyro takeoff is blocked.');
       return;
@@ -177,9 +177,9 @@ export default function GyroControl({
     } else {
       alert('Failed to send takeoff command. Check server connection.');
     }
-  };
+  }, [missionState, droneId, targetAlt, onActiveChange]);
 
-  const handleLand = () => {
+  const handleLand = useCallback(() => {
     if (!droneId) return;
 
     const success = rosConnection.sendGyroCommand({
@@ -193,9 +193,9 @@ export default function GyroControl({
     } else {
       alert('Failed to send land command. Check server connection.');
     }
-  };
+  }, [droneId, onActiveChange]);
 
-  const sendGyroDisable = () => {
+  const sendGyroDisable = useCallback(() => {
     if (!droneId) return;
     rosConnection.sendGyroCommand({
       drone_id: droneId,
@@ -204,9 +204,9 @@ export default function GyroControl({
       vy_mps: 0,
       yaw_deg: manualYaw,
     });
-  };
+  }, [droneId, manualYaw]);
 
-  const toggleHold = () => {
+  const toggleHold = useCallback(() => {
     const next = !isHoldMode;
     setIsHoldMode(next);
     if (next && isActive) {
@@ -218,7 +218,7 @@ export default function GyroControl({
         yaw_deg: manualYaw,
       });
     }
-  };
+  }, [isHoldMode, isActive, droneId, manualYaw]);
 
   if (!isSupported) {
     return (
