@@ -49,8 +49,14 @@ interface MissionCommandPayload {
   command: 'START' | 'PAUSE' | 'RESUME' | 'EMERGENCY_RETURN';
 }
 
-const createNumberedIcon = (number: number, isSelected: boolean) => {
-  return L.divIcon({
+const iconCache = new Map<string, L.DivIcon>();
+
+const createNumberedIcon = (number: number, isSelected: boolean): L.DivIcon => {
+  const cacheKey = `${number}-${isSelected}`;
+  const cached = iconCache.get(cacheKey);
+  if (cached && iconCache.size < 100) return cached;
+
+  const icon = L.divIcon({
     className: 'custom-div-icon',
     html: `
       <div style="
@@ -75,6 +81,11 @@ const createNumberedIcon = (number: number, isSelected: boolean) => {
     iconSize: [32, 32],
     iconAnchor: [16, 16],
   });
+
+  if (iconCache.size < 100) {
+    iconCache.set(cacheKey, icon);
+  }
+  return icon;
 };
 
 function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number) => void }) {
@@ -391,7 +402,7 @@ export default function MissionMap({
 
   const pathCoordinates = useMemo(
     () => waypoints.map(wp => [wp.lat, wp.lng] as [number, number]),
-    [waypoints, missionState]
+    [waypoints]
   );
 
   const getPathStyle = () => {

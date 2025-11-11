@@ -20,15 +20,21 @@ const normHeading = (deg?: number): number => {
   return d;
 };
 
-const createDroneIcon = (id: string, headingDeg: number, isSelected: boolean) => {
-  const displayId = extractDroneNumber(id);
+const iconCache = new Map<string, L.DivIcon>();
 
+const createDroneIcon = (id: string, headingDeg: number, isSelected: boolean) => {
+  const roundedHeading = Math.round(headingDeg / 5) * 5;
+  const cacheKey = `${id}-${roundedHeading}-${isSelected}`;
+  const cached = iconCache.get(cacheKey);
+  if (cached && iconCache.size < 200) return cached;
+
+  const displayId = extractDroneNumber(id);
   const arrowFill = isSelected ? '#0ea5e9' : '#ef4444';
   const arrowStroke = isSelected ? '#0284c7' : '#7f1d1d';
   const scale = isSelected ? 1.15 : 1;
   const shadowIntensity = isSelected ? 0.7 : 0.5;
 
-  return L.divIcon({
+  const icon = L.divIcon({
     className: 'custom-drone-icon',
     html: `
       <div style="
@@ -88,6 +94,11 @@ const createDroneIcon = (id: string, headingDeg: number, isSelected: boolean) =>
     iconSize: [90, 90],
     iconAnchor: [45, 45],
   });
+
+  if (iconCache.size < 200) {
+    iconCache.set(cacheKey, icon);
+  }
+  return icon;
 };
 
 function DroneMarker({ drone, isSelected }: DroneMarkerProps) {
@@ -99,10 +110,11 @@ function DroneMarker({ drone, isSelected }: DroneMarkerProps) {
   }
 
   const heading = normHeading(drone.headingDeg);
+  const roundedHeading = Math.round(heading / 5) * 5;
 
   const icon = useMemo(
-    () => createDroneIcon(drone.id, heading, isSelected),
-    [drone.id, heading, isSelected]
+    () => createDroneIcon(drone.id, roundedHeading, isSelected),
+    [drone.id, roundedHeading, isSelected]
   );
 
   return (

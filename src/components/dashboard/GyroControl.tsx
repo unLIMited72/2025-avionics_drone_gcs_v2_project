@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Smartphone, PlaneTakeoff, PlaneLanding } from 'lucide-react';
 import { rosConnection } from '../../services/rosConnection';
 import type { MissionState } from '../DashboardScreen';
@@ -119,7 +119,7 @@ export default function GyroControl({
     }
   };
 
-  const throttledSendControl = (state: DroneControl) => {
+  const throttledSendControl = useCallback((state: DroneControl) => {
     const now = Date.now();
     if (now - lastSendRef.current < 80) return;
     lastSendRef.current = now;
@@ -137,7 +137,7 @@ export default function GyroControl({
       vx_mps: vx,
       vy_mps: vy,
     });
-  };
+  }, [droneId]);
 
   const handleYawChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newYaw = parseFloat(e.target.value);

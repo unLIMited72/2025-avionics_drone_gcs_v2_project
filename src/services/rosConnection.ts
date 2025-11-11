@@ -120,11 +120,12 @@ class ROSConnection {
   private decodeBase64ToUint8Array(base64: string): number[] {
     try {
       const binaryString = atob(base64);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
+      const length = binaryString.length;
+      const bytes = new Array(length);
+      for (let i = 0; i < length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
       }
-      return Array.from(bytes);
+      return bytes;
     } catch (e) {
       console.error('Base64 decoding error:', e);
       return [];
@@ -367,28 +368,26 @@ class ROSConnection {
   }
 
   private addDroneTrailPoint(droneId: string, lat: number, lng: number) {
-    if (!this.droneTrails.has(droneId)) {
-      this.droneTrails.set(droneId, []);
+    let trail = this.droneTrails.get(droneId);
+    if (!trail) {
+      trail = [];
+      this.droneTrails.set(droneId, trail);
     }
-
-    const trail = this.droneTrails.get(droneId)!;
-    const timestamp = Date.now();
 
     if (trail.length > 0) {
       const lastPoint = trail[trail.length - 1];
-      const distance = Math.sqrt(
-        Math.pow(lat - lastPoint.lat, 2) + Math.pow(lng - lastPoint.lng, 2)
-      );
+      const latDiff = lat - lastPoint.lat;
+      const lngDiff = lng - lastPoint.lng;
+      const distanceSq = latDiff * latDiff + lngDiff * lngDiff;
 
-      if (distance < 0.00001) {
+      if (distanceSq < 0.0000000001) {
         return;
       }
     }
 
-    trail.push({ lat, lng, timestamp });
+    trail.push({ lat, lng, timestamp: Date.now() });
 
-    const MAX_TRAIL_POINTS = 500;
-    if (trail.length > MAX_TRAIL_POINTS) {
+    if (trail.length > 500) {
       trail.shift();
     }
 
