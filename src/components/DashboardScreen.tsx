@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { X } from 'lucide-react';
 import DroneStatusBar from './dashboard/DroneStatusBar';
 import MissionMap from './dashboard/MissionMap';
 import GyroControl from './dashboard/GyroControl';
@@ -6,7 +7,11 @@ import { rosConnection, DroneStatus, MissionStateEnum } from '../services/rosCon
 
 export type MissionState = 'IDLE' | 'ACTIVE' | 'PAUSED' | 'EMERGENCY';
 
-export default function DashboardScreen() {
+interface DashboardScreenProps {
+  onDisconnect: () => void;
+}
+
+export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) {
   const [drones, setDrones] = useState<DroneStatus[]>([]);
   const [selectedDrones, setSelectedDrones] = useState<Set<string>>(new Set());
   const [flightMode, setFlightMode] = useState<'mission' | 'gyro' | null>(null);
@@ -103,7 +108,8 @@ export default function DashboardScreen() {
 
   const handleDisconnectAll = useCallback(() => {
     rosConnection.disconnect();
-  }, []);
+    onDisconnect();
+  }, [onDisconnect]);
 
   const selectionLocked = gyroActive || missionState !== 'IDLE';
   const canUseMission = selectedDrones.size >= 1 && !gyroActive;
@@ -127,11 +133,21 @@ export default function DashboardScreen() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400">Server</span>
-            <div className={`w-3 h-3 rounded-full ${
-              serverConnected ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'
-            }`}></div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400">Server</span>
+              <div className={`w-3 h-3 rounded-full ${
+                serverConnected ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'
+              }`}></div>
+            </div>
+
+            <button
+              onClick={handleDisconnectAll}
+              className="p-2 bg-red-500 hover:bg-red-600 rounded-lg transition-colors"
+              title="Disconnect"
+            >
+              <X className="w-5 h-5 text-white" />
+            </button>
           </div>
         </div>
       </div>
