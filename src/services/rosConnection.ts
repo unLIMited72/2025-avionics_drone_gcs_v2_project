@@ -69,7 +69,6 @@ class ROSConnection {
 
   connect(url: string) {
     this.disconnect();
-    this.isDisconnecting = false;
 
     if (typeof window !== 'undefined' && window.location.protocol === 'https:' && url.startsWith('ws://')) {
       url = url.replace('ws://', 'wss://');
