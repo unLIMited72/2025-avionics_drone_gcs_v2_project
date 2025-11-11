@@ -141,6 +141,20 @@ export default function MissionMap({
           console.log('[MissionMap] Created and advertised mission_command_raw topic');
         }
       } else {
+        if (missionPlanTopicRef.current) {
+          try {
+            missionPlanTopicRef.current.unadvertise();
+          } catch (e) {
+            console.warn('[MissionMap] Error unadvertising mission_plan_raw on disconnect:', e);
+          }
+        }
+        if (missionCommandTopicRef.current) {
+          try {
+            missionCommandTopicRef.current.unadvertise();
+          } catch (e) {
+            console.warn('[MissionMap] Error unadvertising mission_command_raw on disconnect:', e);
+          }
+        }
         missionPlanTopicRef.current = null;
         missionCommandTopicRef.current = null;
         console.log('[MissionMap] Cleared topic refs (not connected)');

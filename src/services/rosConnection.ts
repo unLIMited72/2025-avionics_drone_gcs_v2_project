@@ -68,6 +68,10 @@ class ROSConnection {
   private trailCallbacks: ((trails: Map<string, Array<{lat: number, lng: number, timestamp: number}>>) => void)[] = [];
 
   connect(url: string) {
+    if (this.isDisconnecting) {
+      this.isDisconnecting = false;
+    }
+
     this.disconnect();
 
     if (typeof window !== 'undefined' && window.location.protocol === 'https:' && url.startsWith('ws://')) {
@@ -98,14 +102,18 @@ class ROSConnection {
       console.error('ROS connection error:', error);
       this.connected = false;
       this.notifyConnectionStatus(false);
-      this.scheduleReconnect(url);
+      if (!this.isDisconnecting) {
+        this.scheduleReconnect(url);
+      }
     });
 
     this.ros.on('close', () => {
       console.log('ROS connection closed');
       this.connected = false;
       this.notifyConnectionStatus(false);
-      this.scheduleReconnect(url);
+      if (!this.isDisconnecting) {
+        this.scheduleReconnect(url);
+      }
     });
   }
 
@@ -306,10 +314,6 @@ class ROSConnection {
         console.warn('ROS close error:', e);
       }
     }
-
-    setTimeout(() => {
-      this.isDisconnecting = false;
-    }, 100);
   }
 
   onConnectionChange(callback: (connected: boolean) => void) {
@@ -338,7 +342,8 @@ class ROSConnection {
 
   onTrailUpdate(callback: (trails: Map<string, Array<{lat: number, lng: number, timestamp: number}>>) => void) {
     this.trailCallbacks.push(callback);
-    callback(this.droneTrails);
+    const snapshot = new Map(this.droneTrails);
+    callback(snapshot);
     return () => {
       this.trailCallbacks = this.trailCallbacks.filter(cb => cb !== callback);
     };
@@ -357,7 +362,8 @@ class ROSConnection {
   }
 
   private notifyTrailUpdate() {
-    this.trailCallbacks.forEach(cb => cb(this.droneTrails));
+    const snapshot = new Map(this.droneTrails);
+    this.trailCallbacks.forEach(cb => cb(snapshot));
   }
 
   private addDroneTrailPoint(droneId: string, lat: number, lng: number) {
