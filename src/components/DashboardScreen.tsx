@@ -134,13 +134,6 @@ export default function DashboardScreen({ onDisconnect }: DashboardScreenProps) 
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400">Server</span>
-              <div className={`w-3 h-3 rounded-full ${
-                serverConnected ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'
-              }`}></div>
-            </div>
-
             <button
               onClick={handleDisconnectAll}
               className="p-2 bg-red-500 hover:bg-red-600 rounded-lg transition-colors"
