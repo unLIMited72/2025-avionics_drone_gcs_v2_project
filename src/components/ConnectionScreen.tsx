@@ -33,18 +33,16 @@ export default function ConnectionScreen({
 
   const clientIdRef = useRef<string>(generateClientId());
   const lockServiceRef = useRef<GcsLockService | null>(null);
-  const hasInitializedRef = useRef(false);
 
   useEffect(() => {
-    if (hasInitializedRef.current) return;
-    hasInitializedRef.current = true;
-
-    lockServiceRef.current = new GcsLockService(clientIdRef.current);
-    onLockServiceReady(lockServiceRef.current);
+    const lockService = new GcsLockService(clientIdRef.current);
+    lockServiceRef.current = lockService;
+    onLockServiceReady(lockService);
 
     setIsConnecting(true);
 
     const unsubscribeConnection = rosConnection.onConnectionChange((connected) => {
+      console.log('[ConnectionScreen] onConnectionChange:', connected);
       setServerConnected(connected);
       setIsConnecting(false);
       if (!connected) {

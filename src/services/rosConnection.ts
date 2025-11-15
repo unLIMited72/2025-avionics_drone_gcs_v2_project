@@ -66,20 +66,13 @@ class ROSConnection {
   private currentMissionStatus: MissionStatus | null = null;
   private droneTrails: Map<string, Array<{lat: number, lng: number, timestamp: number}>> = new Map();
   private trailCallbacks: ((trails: Map<string, Array<{lat: number, lng: number, timestamp: number}>>) => void)[] = [];
-  private currentUrl: string | null = null;
 
   connect(url: string) {
     if (this.isDisconnecting) {
       this.isDisconnecting = false;
     }
 
-    if (this.currentUrl === url && this.ros && this.connected) {
-      console.log('[ROSConnection] Already connected to', url);
-      return;
-    }
-
     this.disconnect();
-    this.currentUrl = url;
 
     if (typeof window !== 'undefined' && window.location.protocol === 'https:' && url.startsWith('ws://')) {
       url = url.replace('ws://', 'wss://');
@@ -276,7 +269,6 @@ class ROSConnection {
 
   disconnect() {
     this.isDisconnecting = true;
-    this.currentUrl = null;
 
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
