@@ -57,7 +57,7 @@ export default function ConnectionScreen({ onConnect, onLockServiceReady }: Conn
     rosConnection.connect(ROS_BRIDGE_URL);
 
     const handleBeforeUnload = () => {
-      if (lockServiceRef.current && lockState === 'acquired') {
+      if (lockServiceRef.current) {
         lockServiceRef.current.releaseLock();
       }
     };
@@ -71,12 +71,9 @@ export default function ConnectionScreen({ onConnect, onLockServiceReady }: Conn
 
       if (lockServiceRef.current) {
         lockServiceRef.current.cleanup();
-        if (lockState === 'acquired') {
-          lockServiceRef.current.releaseLock();
-        }
       }
     };
-  }, []);
+  }, [onLockServiceReady]);
 
   const handleAcquireLock = async () => {
     if (!lockServiceRef.current) return;
