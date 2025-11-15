@@ -11,6 +11,12 @@ function App() {
 
   useEffect(() => {
     sessionManagerRef.current = new SessionManager();
+
+    sessionManagerRef.current.setOnSessionLost(() => {
+      setSessionAllowed(false);
+      setIsConnected(false);
+    });
+
     checkSession();
 
     return () => {
@@ -25,6 +31,13 @@ function App() {
 
     const result = await sessionManagerRef.current.checkAndAcquireSession();
     setSessionAllowed(result.success);
+
+    if (result.success) {
+      sessionManagerRef.current.setOnSessionLost(() => {
+        setSessionAllowed(false);
+        setIsConnected(false);
+      });
+    }
   };
 
   const handleConnect = () => {

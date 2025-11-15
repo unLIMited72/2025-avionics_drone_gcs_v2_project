@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, RealtimeChannel } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -10,9 +10,15 @@ const HEARTBEAT_INTERVAL = 30 * 1000;
 export class SessionManager {
   private sessionToken: string;
   private heartbeatInterval: NodeJS.Timeout | null = null;
+  private realtimeChannel: RealtimeChannel | null = null;
+  private onSessionLost: (() => void) | null = null;
 
   constructor() {
     this.sessionToken = this.getOrCreateSessionToken();
+  }
+
+  setOnSessionLost(callback: () => void) {
+    this.onSessionLost = callback;
   }
 
   private getOrCreateSessionToken(): string {
@@ -39,6 +45,7 @@ export class SessionManager {
         if (mySession) {
           await this.updateHeartbeat();
           this.startHeartbeat();
+          this.subscribeToSessionChanges();
           return { success: true };
         }
 
@@ -62,11 +69,57 @@ export class SessionManager {
       }
 
       this.startHeartbeat();
+      this.subscribeToSessionChanges();
       return { success: true };
     } catch (error) {
       console.error('Session check error:', error);
       return { success: false, message: '세션 확인 중 오류가 발생했습니다.' };
     }
+  }
+
+  private subscribeToSessionChanges(): void {
+    if (this.realtimeChannel) {
+      this.realtimeChannel.unsubscribe();
+    }
+
+    this.realtimeChannel = supabase
+      .channel('session_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'active_sessions'
+        },
+        async (payload) => {
+          if (payload.eventType === 'DELETE') {
+            const deletedToken = payload.old.session_token;
+            if (deletedToken === this.sessionToken) {
+              if (this.onSessionLost) {
+                this.onSessionLost();
+              }
+            }
+          } else if (payload.eventType === 'INSERT') {
+            const insertedToken = payload.new.session_token;
+            if (insertedToken !== this.sessionToken) {
+              const { data: sessions } = await supabase
+                .from('active_sessions')
+                .select('*')
+                .gt('expires_at', new Date().toISOString());
+
+              if (sessions && sessions.length > 1) {
+                const mySession = sessions.find(s => s.session_token === this.sessionToken);
+                if (!mySession) {
+                  if (this.onSessionLost) {
+                    this.onSessionLost();
+                  }
+                }
+              }
+            }
+          }
+        }
+      )
+      .subscribe();
   }
 
   private async cleanupExpiredSessions(): Promise<void> {
@@ -109,6 +162,11 @@ export class SessionManager {
     if (this.heartbeatInterval) {
       clearInterval(this.heartbeatInterval);
       this.heartbeatInterval = null;
+    }
+
+    if (this.realtimeChannel) {
+      this.realtimeChannel.unsubscribe();
+      this.realtimeChannel = null;
     }
 
     try {
