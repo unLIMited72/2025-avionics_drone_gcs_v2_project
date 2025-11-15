@@ -1,62 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import ConnectionScreen from './components/ConnectionScreen';
 import DashboardScreen from './components/DashboardScreen';
-import SessionBlocker from './components/SessionBlocker';
-import { SessionManager } from './services/sessionManager';
 
 function App() {
   const [isConnected, setIsConnected] = useState(false);
-  const [sessionAllowed, setSessionAllowed] = useState<boolean | null>(null);
-  const sessionManagerRef = useRef<SessionManager | null>(null);
-
-  useEffect(() => {
-    sessionManagerRef.current = new SessionManager();
-
-    sessionManagerRef.current.setOnSessionLost(() => {
-      setSessionAllowed(false);
-      setIsConnected(false);
-    });
-
-    checkSession();
-
-    const handleBeforeUnload = () => {
-      if (sessionManagerRef.current) {
-        sessionManagerRef.current.releaseSession();
-      }
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.hidden && sessionManagerRef.current) {
-        sessionManagerRef.current.releaseSession();
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-
-      if (sessionManagerRef.current) {
-        sessionManagerRef.current.releaseSession();
-      }
-    };
-  }, []);
-
-  const checkSession = async () => {
-    if (!sessionManagerRef.current) return;
-
-    const result = await sessionManagerRef.current.checkAndAcquireSession();
-    setSessionAllowed(result.success);
-
-    if (result.success) {
-      sessionManagerRef.current.setOnSessionLost(() => {
-        setSessionAllowed(false);
-        setIsConnected(false);
-      });
-    }
-  };
 
   const handleConnect = () => {
     setIsConnected(true);
@@ -64,27 +11,7 @@ function App() {
 
   const handleDisconnect = () => {
     setIsConnected(false);
-    if (sessionManagerRef.current) {
-      sessionManagerRef.current.releaseSession();
-    }
   };
-
-  const handleRetry = () => {
-    setSessionAllowed(null);
-    checkSession();
-  };
-
-  if (sessionAllowed === null) {
-    return (
-      <div className="h-screen bg-slate-900 flex items-center justify-center">
-        <div className="text-white text-lg">세션 확인 중...</div>
-      </div>
-    );
-  }
-
-  if (!sessionAllowed) {
-    return <SessionBlocker onRetry={handleRetry} />;
-  }
 
   return (
     <div className="h-screen bg-slate-900 overflow-hidden">
