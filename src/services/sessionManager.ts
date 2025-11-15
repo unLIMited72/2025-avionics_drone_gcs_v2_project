@@ -56,6 +56,19 @@ export class SessionManager {
         };
       }
 
+      const { data: myOldSession } = await supabase
+        .from('active_sessions')
+        .select('*')
+        .eq('session_token', this.sessionToken)
+        .maybeSingle();
+
+      if (myOldSession) {
+        await supabase
+          .from('active_sessions')
+          .delete()
+          .eq('session_token', this.sessionToken);
+      }
+
       const expiresAt = new Date(Date.now() + SESSION_DURATION).toISOString();
       const { error } = await supabase
         .from('active_sessions')

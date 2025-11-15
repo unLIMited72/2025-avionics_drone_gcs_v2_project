@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Radio, Wifi, WifiOff } from 'lucide-react';
+import { Radio, Wifi, WifiOff, RefreshCw } from 'lucide-react';
 import { rosConnection } from '../services/rosConnection';
 
 interface ConnectionScreenProps {
@@ -40,6 +40,11 @@ export default function ConnectionScreen({ onConnect }: ConnectionScreenProps) {
     if (serverConnected) {
       onConnect();
     }
+  };
+
+  const handleResetSession = () => {
+    localStorage.removeItem('session_token');
+    window.location.reload();
   };
 
   return (
@@ -85,13 +90,23 @@ export default function ConnectionScreen({ onConnect }: ConnectionScreenProps) {
           </div>
         </div>
 
-        <button
-          onClick={handleConnect}
-          disabled={!serverConnected}
-          className="w-full px-6 py-3 bg-sky-500 hover:bg-sky-600 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-900"
-        >
-          Connect
-        </button>
+        <div className="space-y-3">
+          <button
+            onClick={handleConnect}
+            disabled={!serverConnected}
+            className="w-full px-6 py-3 bg-sky-500 hover:bg-sky-600 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-900"
+          >
+            Connect
+          </button>
+
+          <button
+            onClick={handleResetSession}
+            className="w-full px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-slate-600 focus:ring-offset-2 focus:ring-offset-slate-900 flex items-center justify-center gap-2"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Reset Session
+          </button>
+        </div>
 
         <div className="text-center text-xs text-slate-500">
           v1.0.0
