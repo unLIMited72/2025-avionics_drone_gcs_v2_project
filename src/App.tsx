@@ -5,10 +5,12 @@ import { GcsLockService } from './services/gcsLockService';
 
 function App() {
   const [isConnected, setIsConnected] = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
   const lockServiceRef = useRef<GcsLockService | null>(null);
 
   const handleConnect = () => {
     setIsConnected(true);
+    setSessionExpired(false);
   };
 
   const handleDisconnect = async () => {
@@ -21,6 +23,17 @@ function App() {
 
   const handleLockServiceReady = (service: GcsLockService) => {
     lockServiceRef.current = service;
+
+    service.setOnLockLost(() => {
+      console.warn('[App] GCS lock lost, disconnecting...');
+      service.stopHeartbeat();
+      setIsConnected(false);
+      setSessionExpired(true);
+    });
+  };
+
+  const handleClearSessionExpired = () => {
+    setSessionExpired(false);
   };
 
   return (
@@ -29,6 +42,8 @@ function App() {
         <ConnectionScreen
           onConnect={handleConnect}
           onLockServiceReady={handleLockServiceReady}
+          sessionExpired={sessionExpired}
+          onClearSessionExpired={handleClearSessionExpired}
         />
       ) : (
         <DashboardScreen onDisconnect={handleDisconnect} />

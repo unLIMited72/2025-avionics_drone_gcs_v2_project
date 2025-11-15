@@ -6,6 +6,8 @@ import { GcsLockService, LockState } from '../services/gcsLockService';
 interface ConnectionScreenProps {
   onConnect: () => void;
   onLockServiceReady: (service: GcsLockService) => void;
+  sessionExpired?: boolean;
+  onClearSessionExpired?: () => void;
 }
 
 const ROS_BRIDGE_URL = 'wss://px4gcsserver.ngrok.app';
@@ -17,7 +19,12 @@ function generateClientId(): string {
   return `client-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
 }
 
-export default function ConnectionScreen({ onConnect, onLockServiceReady }: ConnectionScreenProps) {
+export default function ConnectionScreen({
+  onConnect,
+  onLockServiceReady,
+  sessionExpired = false,
+  onClearSessionExpired
+}: ConnectionScreenProps) {
   const [serverConnected, setServerConnected] = useState(false);
   const [availableDrones, setAvailableDrones] = useState(0);
   const [isConnecting, setIsConnecting] = useState(true);
@@ -34,11 +41,6 @@ export default function ConnectionScreen({ onConnect, onLockServiceReady }: Conn
 
     lockServiceRef.current = new GcsLockService(clientIdRef.current);
     onLockServiceReady(lockServiceRef.current);
-
-    lockServiceRef.current.setOnLockLost(() => {
-      setLockState('lost');
-      rosConnection.disconnect();
-    });
 
     setIsConnecting(true);
 
@@ -96,12 +98,14 @@ export default function ConnectionScreen({ onConnect, onLockServiceReady }: Conn
   const handleRetry = () => {
     setLockState('idle');
     setErrorMessage('');
+    onClearSessionExpired?.();
   };
 
-  const handleReconnect = () => {
-    setLockState('idle');
-    setErrorMessage('');
-  };
+  useEffect(() => {
+    if (sessionExpired) {
+      console.log('[ConnectionScreen] Session expired, showing notification');
+    }
+  }, [sessionExpired]);
 
   if (lockState === 'requesting') {
     return (
@@ -142,37 +146,6 @@ export default function ConnectionScreen({ onConnect, onLockServiceReady }: Conn
           >
             <RefreshCw className="w-5 h-5" />
             다시 시도하기
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (lockState === 'lost') {
-    return (
-      <div className="h-full flex flex-col items-center justify-center p-6 bg-slate-950">
-        <div className="w-full max-w-md space-y-6">
-          <div className="text-center space-y-4">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-red-500/20 rounded-full border-2 border-red-500">
-              <AlertCircle className="w-10 h-10 text-red-400" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-white mb-2">세션이 만료되었습니다</h2>
-              <p className="text-slate-400">
-                세션이 만료되었거나 다른 사용자가 접속을 시작했습니다.
-              </p>
-              <p className="text-sm text-slate-500 mt-2">
-                다시 접속을 시도하려면 아래 버튼을 눌러주세요.
-              </p>
-            </div>
-          </div>
-
-          <button
-            onClick={handleReconnect}
-            className="w-full px-6 py-3 bg-sky-500 hover:bg-sky-600 text-white font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-900 flex items-center justify-center gap-2"
-          >
-            <RefreshCw className="w-5 h-5" />
-            다시 접속하기
           </button>
         </div>
       </div>
@@ -221,6 +194,17 @@ export default function ConnectionScreen({ onConnect, onLockServiceReady }: Conn
             </span>
           </div>
         </div>
+
+        {sessionExpired && (
+          <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+            <div className="flex items-center gap-2 text-red-400">
+              <AlertCircle className="w-4 h-4" />
+              <p className="text-sm font-medium">
+                이전 세션이 만료되었습니다. 다시 접속해 주세요.
+              </p>
+            </div>
+          </div>
+        )}
 
         <button
           onClick={handleAcquireLock}
