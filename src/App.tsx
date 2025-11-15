@@ -19,7 +19,25 @@ function App() {
 
     checkSession();
 
+    const handleBeforeUnload = () => {
+      if (sessionManagerRef.current) {
+        sessionManagerRef.current.releaseSession();
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden && sessionManagerRef.current) {
+        sessionManagerRef.current.releaseSession();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+
       if (sessionManagerRef.current) {
         sessionManagerRef.current.releaseSession();
       }
@@ -44,10 +62,10 @@ function App() {
     setIsConnected(true);
   };
 
-  const handleDisconnect = async () => {
+  const handleDisconnect = () => {
     setIsConnected(false);
     if (sessionManagerRef.current) {
-      await sessionManagerRef.current.releaseSession();
+      sessionManagerRef.current.releaseSession();
     }
   };
 

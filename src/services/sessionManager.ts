@@ -172,7 +172,7 @@ export class SessionManager {
     }, HEARTBEAT_INTERVAL);
   }
 
-  async releaseSession(): Promise<void> {
+  releaseSession(): void {
     if (this.heartbeatInterval) {
       clearInterval(this.heartbeatInterval);
       this.heartbeatInterval = null;
@@ -183,13 +183,18 @@ export class SessionManager {
       this.realtimeChannel = null;
     }
 
-    try {
-      await supabase
-        .from('active_sessions')
-        .delete()
-        .eq('session_token', this.sessionToken);
-    } catch (error) {
-      console.error('Session release error:', error);
-    }
+    navigator.sendBeacon(
+      `${supabaseUrl}/rest/v1/active_sessions?session_token=eq.${this.sessionToken}`,
+      JSON.stringify({})
+    );
+
+    fetch(`${supabaseUrl}/rest/v1/active_sessions?session_token=eq.${this.sessionToken}`, {
+      method: 'DELETE',
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+      },
+      keepalive: true
+    }).catch(() => {});
   }
 }
