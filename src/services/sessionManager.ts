@@ -3,8 +3,15 @@ import { createClient, RealtimeChannel } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
+console.log('Environment check:', {
+  url: supabaseUrl ? 'exists' : 'missing',
+  key: supabaseKey ? 'exists' : 'missing',
+  allEnv: import.meta.env
+});
+
 if (!supabaseUrl || !supabaseKey) {
   console.error('Missing Supabase environment variables');
+  throw new Error('Supabase configuration is missing. Please check your .env file.');
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey);
