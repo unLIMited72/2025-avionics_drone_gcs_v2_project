@@ -25,7 +25,10 @@ export class GcsLockService {
 
   async acquireLock(): Promise<LockResponse> {
     try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/gcs-acquire-lock`, {
+      const url = `${SUPABASE_URL}/functions/v1/gcs-acquire-lock`;
+      console.log('[GcsLockService] Acquiring lock at:', url);
+
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -33,10 +36,12 @@ export class GcsLockService {
         body: JSON.stringify({ clientId: this.clientId }),
       });
 
+      console.log('[GcsLockService] Acquire lock response status:', response.status);
       const data = await response.json();
+      console.log('[GcsLockService] Acquire lock response data:', data);
       return data;
     } catch (error) {
-      console.error('Error acquiring lock:', error);
+      console.error('[GcsLockService] Error acquiring lock:', error);
       return {
         ok: false,
         code: 'NETWORK_ERROR',
@@ -56,9 +61,12 @@ export class GcsLockService {
       });
 
       const data = await response.json();
+      if (!data.ok) {
+        console.warn('[GcsLockService] Heartbeat failed:', data);
+      }
       return data;
     } catch (error) {
-      console.error('Error sending heartbeat:', error);
+      console.error('[GcsLockService] Error sending heartbeat:', error);
       return {
         ok: false,
         code: 'NETWORK_ERROR',
