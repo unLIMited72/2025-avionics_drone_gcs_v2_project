@@ -1,44 +1,19 @@
-import { useState, useEffect, useRef } from 'react';
-import { Radio, Wifi, WifiOff, Lock, RefreshCw, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Radio, Wifi, WifiOff } from 'lucide-react';
 import { rosConnection } from '../services/rosConnection';
-import { GcsLockService, LockState } from '../services/gcsLockService';
 
 interface ConnectionScreenProps {
   onConnect: () => void;
-  onLockServiceReady: (service: GcsLockService) => void;
-  sessionExpired?: boolean;
-  onClearSessionExpired?: () => void;
 }
 
 const ROS_BRIDGE_URL = 'wss://px4gcsserver.ngrok.app';
 
-function generateClientId(): string {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  return `client-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
-}
-
-export default function ConnectionScreen({
-  onConnect,
-  onLockServiceReady,
-  sessionExpired = false,
-  onClearSessionExpired
-}: ConnectionScreenProps) {
+export default function ConnectionScreen({ onConnect }: ConnectionScreenProps) {
   const [serverConnected, setServerConnected] = useState(false);
   const [availableDrones, setAvailableDrones] = useState(0);
   const [isConnecting, setIsConnecting] = useState(true);
-  const [lockState, setLockState] = useState<LockState>('idle');
-  const [errorMessage, setErrorMessage] = useState<string>('');
-
-  const clientIdRef = useRef<string>(generateClientId());
-  const lockServiceRef = useRef<GcsLockService | null>(null);
 
   useEffect(() => {
-    const lockService = new GcsLockService(clientIdRef.current);
-    lockServiceRef.current = lockService;
-    onLockServiceReady(lockService);
-
     setIsConnecting(true);
 
     const unsubscribeConnection = rosConnection.onConnectionChange((connected) => {
@@ -56,99 +31,11 @@ export default function ConnectionScreen({
 
     rosConnection.connect(ROS_BRIDGE_URL);
 
-    const handleBeforeUnload = () => {
-      if (lockServiceRef.current) {
-        lockServiceRef.current.releaseLock();
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
     return () => {
       unsubscribeConnection();
       unsubscribeStatus();
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-
-      if (lockServiceRef.current) {
-        lockServiceRef.current.cleanup();
-      }
     };
-  }, [onLockServiceReady]);
-
-  const handleAcquireLock = async () => {
-    if (!lockServiceRef.current) return;
-
-    setLockState('requesting');
-    setErrorMessage('');
-
-    const result = await lockServiceRef.current.acquireLock();
-
-    if (result.ok) {
-      setLockState('acquired');
-      lockServiceRef.current.startHeartbeat();
-      onConnect();
-    } else {
-      setLockState('denied');
-      setErrorMessage(result.message || '락 획득에 실패했습니다.');
-    }
-  };
-
-  const handleRetry = () => {
-    setLockState('idle');
-    setErrorMessage('');
-    onClearSessionExpired?.();
-  };
-
-  useEffect(() => {
-    if (sessionExpired) {
-      console.log('[ConnectionScreen] Session expired, showing notification');
-    }
-  }, [sessionExpired]);
-
-  if (lockState === 'requesting') {
-    return (
-      <div className="h-full flex flex-col items-center justify-center p-6 bg-slate-950">
-        <div className="w-full max-w-md space-y-6 text-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-sky-500/20 rounded-full border-2 border-sky-500">
-            <div className="w-10 h-10 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-white mb-2">접속 중입니다...</h2>
-            <p className="text-slate-400">GCS 락을 확인하는 중입니다.</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (lockState === 'denied') {
-    return (
-      <div className="h-full flex flex-col items-center justify-center p-6 bg-slate-950">
-        <div className="w-full max-w-md space-y-6">
-          <div className="text-center space-y-4">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-orange-500/20 rounded-full border-2 border-orange-500">
-              <Lock className="w-10 h-10 text-orange-400" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-white mb-2">접속이 제한되었습니다</h2>
-              <p className="text-slate-400">{errorMessage}</p>
-              <p className="text-sm text-slate-500 mt-2">
-                현재 다른 사용자가 시스템을 사용 중입니다.
-              </p>
-            </div>
-          </div>
-
-          <button
-            onClick={handleRetry}
-            className="w-full px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-slate-900 flex items-center justify-center gap-2"
-          >
-            <RefreshCw className="w-5 h-5" />
-            다시 시도하기
-          </button>
-        </div>
-      </div>
-    );
-  }
+  }, []);
 
   return (
     <div className="h-full flex flex-col items-center justify-center p-6 bg-slate-950">
@@ -193,19 +80,8 @@ export default function ConnectionScreen({
           </div>
         </div>
 
-        {sessionExpired && (
-          <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
-            <div className="flex items-center gap-2 text-red-400">
-              <AlertCircle className="w-4 h-4" />
-              <p className="text-sm font-medium">
-                이전 세션이 만료되었습니다. 다시 접속해 주세요.
-              </p>
-            </div>
-          </div>
-        )}
-
         <button
-          onClick={handleAcquireLock}
+          onClick={onConnect}
           disabled={!serverConnected}
           className="w-full px-6 py-3 bg-sky-500 hover:bg-sky-600 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-900"
         >
